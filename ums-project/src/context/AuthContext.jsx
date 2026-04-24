@@ -4,7 +4,6 @@ import { supabase } from '../lib/supabaseClient'
 const AuthContext = createContext(null)
 
 const AUTH_TIMEOUT_MS = 5000
-const ROLE_TIMEOUT_MS = 15000
 
 async function withTimeout(promise, label, timeoutMs = AUTH_TIMEOUT_MS) {
   let timeoutId
@@ -20,6 +19,12 @@ async function withTimeout(promise, label, timeoutMs = AUTH_TIMEOUT_MS) {
   } finally {
     clearTimeout(timeoutId)
   }
+}
+
+const ROLE_TOTAL_TIMEOUT_MS = 20000
+
+async function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms))
 }
 
 async function resolveRole(userId) {
@@ -47,12 +52,30 @@ async function resolveRole(userId) {
   return null
 }
 
+/** Retries help after the tab was idle: network/Supabase can flakily fail on the first call */
+async function resolveRoleWithRetry(userId, { attempts = 3, delayMs = 400 } = {}) {
+  let lastError
+  for (let i = 0; i < attempts; i += 1) {
+    try {
+      return await resolveRole(userId)
+    } catch (e) {
+      lastError = e
+      if (i < attempts - 1) {
+        await sleep(delayMs * (i + 1))
+      }
+    }
+  }
+  throw lastError
+}
+
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)
   const [user, setUser] = useState(null)
   const [role, setRole] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [isResolvingRole, setIsResolvingRole] = useState(false)
   const loadingRef = useRef(true)
+  const roleLookupInFlight = useRef(0)
 
   const syncLoadingRef = (v) => {
     loadingRef.current = v
@@ -72,18 +95,16 @@ export function AuthProvider({ children }) {
       }
       try {
         const detectedRole = await withTimeout(
-          resolveRole(activeSession.user.id),
+          resolveRoleWithRetry(activeSession.user.id),
           'Role lookup',
-          ROLE_TIMEOUT_MS
+          ROLE_TOTAL_TIMEOUT_MS
         )
         if (isMounted) {
           setRole(detectedRole)
         }
       } catch (roleError) {
+        // Do not clear an existing valid role: transient network/DB errors on refresh are common
         console.error('Failed to resolve role', roleError)
-        if (isMounted) {
-          setRole(null)
-        }
       }
     }
 
@@ -200,27 +221,33 @@ export function AuthProvider({ children }) {
 
       if (!nextSession?.user?.id) {
         setRole(null)
+        roleLookupInFlight.current = 0
+        setIsResolvingRole(false)
         syncLoadingRef(false)
         return
       }
 
-      // Do not toggle global `loading` here. Tab return / token refresh can fire
-      // SIGNED_IN or other events; blocking the app caused endless "Loading account…"
-      // Only the initial `hydrateSession` / `recoverBootstrapIfStuck` / login / logout
-      // control the full-page loader.
+      // Do not toggle global `loading` here. Tab return / token refresh can re-run role lookup;
+      // errors must not clear a previously valid role, or the UI shows "no role" until full refresh.
+      roleLookupInFlight.current += 1
+      if (isMounted) {
+        setIsResolvingRole(true)
+      }
       try {
         const detectedRole = await withTimeout(
-          resolveRole(nextSession.user.id),
+          resolveRoleWithRetry(nextSession.user.id),
           'Role lookup',
-          ROLE_TIMEOUT_MS
+          ROLE_TOTAL_TIMEOUT_MS
         )
         if (isMounted) {
           setRole(detectedRole)
         }
       } catch (roleError) {
-        console.error('Failed to resolve role', roleError)
+        console.error('Failed to resolve role (keeping previous role if any)', roleError)
+      } finally {
         if (isMounted) {
-          setRole(null)
+          roleLookupInFlight.current = Math.max(0, roleLookupInFlight.current - 1)
+          setIsResolvingRole(roleLookupInFlight.current > 0)
         }
       }
     })
@@ -254,7 +281,11 @@ export function AuthProvider({ children }) {
 
     let detectedRole
     try {
-      detectedRole = await withTimeout(resolveRole(signedInUserId), 'Role lookup', ROLE_TIMEOUT_MS)
+      detectedRole = await withTimeout(
+        resolveRoleWithRetry(signedInUserId),
+        'Role lookup',
+        ROLE_TOTAL_TIMEOUT_MS
+      )
     } catch (e) {
       await supabase.auth.signOut()
       syncLoadingRef(false)
@@ -293,10 +324,11 @@ export function AuthProvider({ children }) {
       session,
       role,
       loading,
+      isResolvingRole,
       login,
       logout,
     }),
-    [user, session, role, loading]
+    [user, session, role, loading, isResolvingRole]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

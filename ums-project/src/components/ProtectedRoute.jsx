@@ -2,7 +2,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export default function ProtectedRoute({ allowedRoles }) {
-  const { session, role, loading } = useAuth()
+  const { session, role, loading, isResolvingRole } = useAuth()
   const location = useLocation()
 
   if (loading) {
@@ -16,6 +16,15 @@ export default function ProtectedRoute({ allowedRoles }) {
 
   if (!session) {
     return <Navigate to="/login" replace state={{ from: location }} />
+  }
+
+  if (!role && isResolvingRole) {
+    return (
+      <section className="page-card">
+        <h2>Restoring your access...</h2>
+        <p>Checking your role after session refresh. This may take a moment if the tab was in the background.</p>
+      </section>
+    )
   }
 
   if (!role) {
