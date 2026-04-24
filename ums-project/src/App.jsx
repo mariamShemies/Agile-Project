@@ -2,7 +2,7 @@ import { BrowserRouter, NavLink, Navigate, Route, Routes } from 'react-router-do
 import Applications from './pages/Applications.jsx'
 import ApplicationsReview from './pages/ApplicationsReview.jsx'
 import Login from './pages/Login.jsx'
-import Rooms from './pages/Rooms.jsx'
+import RoomAvailabilityPage from './pages/RoomAvailabilityPage.jsx'
 import Staff from './pages/Staff.jsx'
 import Subjects from './pages/Subjects.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
@@ -39,7 +39,7 @@ function AppLayout() {
           { to: '/staff-dashboard', label: 'Dashboard' },
           { to: '/applications', label: 'Submit application' },
           { to: '/applications-review', label: 'Review applications' },
-          { to: '/rooms', label: 'Rooms' },
+          { to: '/rooms', label: 'Room availability' },
           { to: '/staff', label: 'Staff' },
           { to: '/subjects', label: 'Subjects' },
         ]
@@ -80,7 +80,7 @@ function AppLayout() {
           {role === 'staff' ? <Route path="/applications" element={<Applications />} /> : null}
           {role === 'staff' ? <Route path="/applications-review" element={<ApplicationsReview />} /> : null}
           <Route path="/subjects" element={<Subjects />} />
-          {role === 'staff' ? <Route path="/rooms" element={<Rooms />} /> : null}
+          {role === 'staff' ? <Route path="/rooms" element={<RoomAvailabilityPage />} /> : null}
           {role === 'staff' ? <Route path="/staff" element={<Staff />} /> : null}
           <Route
             path="*"

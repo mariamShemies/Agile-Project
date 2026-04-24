@@ -372,6 +372,133 @@ button {
   margin-top: 10px;
 }
 
+.room-availability-intro {
+  margin-top: 8px;
+  color: #475569;
+}
+
+.room-availability-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+  margin-top: 20px;
+  margin-bottom: 8px;
+}
+
+.room-availability-toolbar .filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.room-availability-toolbar .filter-group label {
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.room-filter-select {
+  margin: 0;
+  min-width: 200px;
+}
+
+.room-refresh-btn {
+  margin-bottom: 2px;
+}
+
+.room-availability-scroll {
+  margin-top: 12px;
+}
+
+.room-availability-table {
+  min-width: 560px;
+}
+
+.room-availability-empty {
+  text-align: center;
+  color: #64748b;
+  padding: 24px !important;
+}
+
+.room-status {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border-radius: 999px;
+}
+
+.room-status-free {
+  color: #166534;
+  background: #dcfce7;
+  border: 1px solid #86efac;
+}
+
+.room-status-booked {
+  color: #991b1b;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+}
+
+.room-status-reserved {
+  color: #a16207;
+  background: #fef9c3;
+  border: 1px solid #fde047;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.modal-panel {
+  width: 100%;
+  max-width: 440px;
+  max-height: min(90vh, 640px);
+  overflow: auto;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.2);
+}
+
+.modal-panel h3 {
+  margin-top: 0;
+}
+
+.modal-subtitle {
+  margin: 0 0 16px;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.reserve-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.modal-cancel {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.modal-cancel:hover {
+  background: #e2e8f0;
+}
+
 .status-message {
   margin-top: 12px;
   color: #0f172a;
