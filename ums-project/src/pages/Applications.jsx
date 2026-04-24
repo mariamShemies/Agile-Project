@@ -1,127 +1,64 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 
+const initialForm = {
+  full_name: '',
+  national_id: '',
+  date_of_birth: '',
+  email: '',
+  phone: '',
+  program: '',
+}
+
 export default function Applications() {
   const { role } = useAuth()
-  const [pendingApplications, setPendingApplications] = useState([])
-  const [isLoadingList, setIsLoadingList] = useState(true)
-  const [activeActionId, setActiveActionId] = useState(null)
-  const [rejectingId, setRejectingId] = useState(null)
-  const [rejectReason, setRejectReason] = useState('')
+  const [form, setForm] = useState(initialForm)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [feedbackState, setFeedbackState] = useState('idle')
   const [feedbackMessage, setFeedbackMessage] = useState('')
 
-  const fetchPendingApplications = async () => {
-    setIsLoadingList(true)
+  const updateField = (field) => (event) => {
+    setForm((prev) => ({ ...prev, [field]: event.target.value }))
+  }
+
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    setFeedbackState('idle')
+    setFeedbackMessage('')
+
+    const applicationId = crypto.randomUUID()
+    const nowIso = new Date().toISOString()
+
+    setIsSubmitting(true)
     try {
-      const { data, error } = await supabase
-        .from('applications')
-        .select('id, full_name, national_id, date_of_birth, email, phone, program, status, created_at')
-        .eq('status', 'Pending')
-        .order('created_at', { ascending: true })
+      const { error } = await supabase.from('applications').insert([
+        {
+          id: applicationId,
+          full_name: form.full_name.trim(),
+          national_id: form.national_id.trim(),
+          date_of_birth: form.date_of_birth,
+          email: form.email.trim(),
+          phone: form.phone.trim(),
+          program: form.program.trim(),
+          status: 'Pending',
+          created_at: nowIso,
+        },
+      ])
 
       if (error) {
         throw error
       }
 
-      setPendingApplications(data ?? [])
-    } catch (error) {
-      console.error('Failed to fetch pending applications', error)
-      setFeedbackState('error')
-      setFeedbackMessage(error.message || 'Failed to load pending applications.')
-    } finally {
-      setIsLoadingList(false)
-    }
-  }
-
-  useEffect(() => {
-    if (role === 'staff') {
-      fetchPendingApplications()
-    }
-  }, [role])
-
-  const removeFromPendingList = (applicationId) => {
-    setPendingApplications((currentApplications) =>
-      currentApplications.filter((application) => application.id !== applicationId)
-    )
-  }
-
-  const handleApprove = async (application) => {
-    setFeedbackMessage('')
-    setActiveActionId(application.id)
-
-    const generatedStudentId = crypto.randomUUID()
-    const studentPayload = {
-      student_id: generatedStudentId,
-      full_name: application.full_name,
-      national_id: application.national_id,
-      email: application.email,
-      program: application.program,
-    }
-
-    try {
-      const { error: studentInsertError } = await supabase.from('students').insert([studentPayload])
-
-      if (studentInsertError) {
-        throw studentInsertError
-      }
-
-      const { error: updateError } = await supabase
-        .from('applications')
-        .update({ status: 'Approved', rejection_reason: null })
-        .eq('id', application.id)
-
-      if (updateError) {
-        throw updateError
-      }
-
-      removeFromPendingList(application.id)
+      setForm(initialForm)
       setFeedbackState('success')
-      setFeedbackMessage(`Application approved. Student created with ID ${generatedStudentId}.`)
+      setFeedbackMessage('Application submitted successfully and is pending review')
     } catch (error) {
-      console.error('Failed to approve application', error)
+      console.error('Failed to submit application', error)
       setFeedbackState('error')
-      setFeedbackMessage(error.message || 'Failed to approve application.')
+      setFeedbackMessage(error.message || 'Failed to submit application. Please try again.')
     } finally {
-      setActiveActionId(null)
-      setRejectingId(null)
-      setRejectReason('')
-    }
-  }
-
-  const handleReject = async (application) => {
-    const trimmedReason = rejectReason.trim()
-    if (!trimmedReason) {
-      setFeedbackState('error')
-      setFeedbackMessage('Rejection reason is required.')
-      return
-    }
-
-    setFeedbackMessage('')
-    setActiveActionId(application.id)
-
-    try {
-      const { error } = await supabase
-        .from('applications')
-        .update({ status: 'Rejected', rejection_reason: trimmedReason })
-        .eq('id', application.id)
-
-      if (error) {
-        throw error
-      }
-
-      removeFromPendingList(application.id)
-      setFeedbackState('success')
-      setFeedbackMessage('Application rejected successfully.')
-      setRejectingId(null)
-      setRejectReason('')
-    } catch (error) {
-      console.error('Failed to reject application', error)
-      setFeedbackState('error')
-      setFeedbackMessage(error.message || 'Failed to reject application.')
-    } finally {
-      setActiveActionId(null)
+      setIsSubmitting(false)
     }
   }
 
@@ -129,105 +66,109 @@ export default function Applications() {
     return (
       <section className="page-card">
         <h2>Access denied</h2>
-        <p>Applications are visible to staff members only.</p>
+        <p>Application submission is only available to staff (Admissions).</p>
       </section>
     )
   }
 
   return (
     <section className="page-card">
-      <p className="eyebrow">Registrar</p>
-      <h2>Pending Applications Review</h2>
-      <p>Approve qualified applications or reject with a reason.</p>
+      <p className="eyebrow">Admissions</p>
+      <h2>New application</h2>
+      <p>Enter the applicant’s details. The record is saved immediately as Pending; approval happens separately in Review.</p>
 
-      {isLoadingList ? <p className="status-message">Loading pending applications...</p> : null}
+      <form className="application-form" onSubmit={handleSubmit}>
+        <div className="form-field">
+          <label htmlFor="full_name">Full name</label>
+          <input
+            id="full_name"
+            name="full_name"
+            value={form.full_name}
+            onChange={updateField('full_name')}
+            autoComplete="name"
+            required
+            disabled={isSubmitting}
+          />
+        </div>
 
-      {!isLoadingList && pendingApplications.length === 0 ? (
-        <p className="status-message">No pending applications found.</p>
-      ) : null}
+        <div className="form-field">
+          <label htmlFor="national_id">National ID</label>
+          <input
+            id="national_id"
+            name="national_id"
+            value={form.national_id}
+            onChange={updateField('national_id')}
+            required
+            disabled={isSubmitting}
+          />
+        </div>
 
-      <div className="review-grid">
-        {pendingApplications.map((application) => {
-          const isProcessing = activeActionId === application.id
-          const isRejectingThisCard = rejectingId === application.id
+        <div className="form-field">
+          <label htmlFor="date_of_birth">Date of birth</label>
+          <input
+            id="date_of_birth"
+            name="date_of_birth"
+            type="date"
+            value={form.date_of_birth}
+            onChange={updateField('date_of_birth')}
+            required
+            disabled={isSubmitting}
+          />
+        </div>
 
-          return (
-            <article key={application.id} className="review-card">
-              <h3>{application.full_name}</h3>
-              <p>
-                <strong>National ID:</strong> {application.national_id}
-              </p>
-              <p>
-                <strong>Date of birth:</strong> {application.date_of_birth}
-              </p>
-              <p>
-                <strong>Email:</strong> {application.email}
-              </p>
-              <p>
-                <strong>Phone:</strong> {application.phone}
-              </p>
-              <p>
-                <strong>Program:</strong> {application.program}
-              </p>
-              <p>
-                <strong>Status:</strong> {application.status}
-              </p>
+        <div className="form-field">
+          <label htmlFor="email">Email</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            value={form.email}
+            onChange={updateField('email')}
+            autoComplete="email"
+            required
+            disabled={isSubmitting}
+          />
+        </div>
 
-              <div className="review-actions">
-                <button
-                  className="primary-button"
-                  type="button"
-                  disabled={isProcessing}
-                  onClick={() => handleApprove(application)}
-                >
-                  {isProcessing ? 'Processing...' : 'Approve'}
-                </button>
+        <div className="form-field">
+          <label htmlFor="phone">Phone</label>
+          <input
+            id="phone"
+            name="phone"
+            type="tel"
+            value={form.phone}
+            onChange={updateField('phone')}
+            autoComplete="tel"
+            required
+            disabled={isSubmitting}
+          />
+        </div>
 
-                <button
-                  className="danger-button"
-                  type="button"
-                  disabled={isProcessing}
-                  onClick={() => {
-                    if (isRejectingThisCard) {
-                      setRejectingId(null)
-                      setRejectReason('')
-                    } else {
-                      setRejectingId(application.id)
-                      setRejectReason('')
-                    }
-                  }}
-                >
-                  Reject
-                </button>
-              </div>
+        <div className="form-field">
+          <label htmlFor="program">Program</label>
+          <input
+            id="program"
+            name="program"
+            value={form.program}
+            onChange={updateField('program')}
+            required
+            disabled={isSubmitting}
+            placeholder="e.g. BSc Computer Science"
+          />
+        </div>
 
-              {isRejectingThisCard ? (
-                <div className="reject-panel">
-                  <label htmlFor={`reject-reason-${application.id}`}>Rejection reason</label>
-                  <textarea
-                    id={`reject-reason-${application.id}`}
-                    value={rejectReason}
-                    onChange={(event) => setRejectReason(event.target.value)}
-                    placeholder="Enter reason for rejection"
-                    rows={3}
-                  />
-                  <button
-                    className="danger-button"
-                    type="button"
-                    disabled={isProcessing}
-                    onClick={() => handleReject(application)}
-                  >
-                    {isProcessing ? 'Processing...' : 'Confirm rejection'}
-                  </button>
-                </div>
-              ) : null}
-            </article>
-          )
-        })}
-      </div>
+        <div>
+          <button className="primary-button" type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Submitting...' : 'Submit application'}
+          </button>
+        </div>
+      </form>
 
       {feedbackMessage ? (
-        <p className={feedbackState === 'success' ? 'status-message success-message' : 'status-message error-message'}>
+        <p
+          className={feedbackState === 'success' ? 'status-message success-message' : 'status-message error-message'}
+          role="status"
+        >
           {feedbackMessage}
         </p>
       ) : null}

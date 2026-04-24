@@ -37,8 +37,8 @@ function AppLayout() {
     role === 'staff'
       ? [
           { to: '/staff-dashboard', label: 'Dashboard' },
-          { to: '/applications', label: 'Applications Submit' },
-          { to: '/applications-review', label: 'Applications Review' },
+          { to: '/applications', label: 'Submit application' },
+          { to: '/applications-review', label: 'Review applications' },
           { to: '/rooms', label: 'Rooms' },
           { to: '/staff', label: 'Staff' },
           { to: '/subjects', label: 'Subjects' },
