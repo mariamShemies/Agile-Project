@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { Fragment, useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 
@@ -22,6 +22,8 @@ export default function ApplicationsReview() {
   const [pendingApplications, setPendingApplications] = useState([])
   const [isLoadingList, setIsLoadingList] = useState(true)
   const [activeActionId, setActiveActionId] = useState(null)
+  const [rejectingId, setRejectingId] = useState(null)
+  const [rejectReason, setRejectReason] = useState('')
   const [feedbackState, setFeedbackState] = useState('idle')
   const [feedbackMessage, setFeedbackMessage] = useState('')
 
@@ -97,12 +99,16 @@ export default function ApplicationsReview() {
       setFeedbackMessage(error.message || 'Failed to approve application.')
     } finally {
       setActiveActionId(null)
+      setRejectingId(null)
+      setRejectReason('')
     }
   }
 
   const handleReject = async (application) => {
-    const confirmed = window.confirm('Reject this application?')
-    if (!confirmed) {
+    const trimmedReason = rejectReason.trim()
+    if (!trimmedReason) {
+      setFeedbackState('error')
+      setFeedbackMessage('A rejection reason is required before you can reject this application.')
       return
     }
 
@@ -119,6 +125,8 @@ export default function ApplicationsReview() {
       removeFromPendingList(application.id)
       setFeedbackState('success')
       setFeedbackMessage('Application rejected successfully.')
+      setRejectingId(null)
+      setRejectReason('')
     } catch (error) {
       console.error('Failed to reject application', error)
       setFeedbackState('error')
@@ -141,7 +149,10 @@ export default function ApplicationsReview() {
     <section className="page-card">
       <p className="eyebrow">Registrar</p>
       <h2>Review applications</h2>
-      <p>Only applications with status Pending are shown. Approve to create a student record, or reject to mark as rejected.</p>
+      <p>
+        Only applications with status Pending are shown. Approve to create a student record, or to reject: enter a{' '}
+        <strong>mandatory reason</strong> below, then confirm. Only the <strong>status</strong> is saved in the database.
+      </p>
 
       {isLoadingList ? <p className="status-message">Loading pending applications...</p> : null}
 
@@ -168,37 +179,78 @@ export default function ApplicationsReview() {
             <tbody>
               {pendingApplications.map((application) => {
                 const isProcessing = activeActionId === application.id
+                const isRejectingThisRow = rejectingId === application.id
 
                 return (
-                  <tr key={application.id}>
-                    <td>{application.full_name}</td>
-                    <td>{application.national_id}</td>
-                    <td>{formatDate(application.date_of_birth)}</td>
-                    <td>{application.email}</td>
-                    <td>{application.phone}</td>
-                    <td>{application.program}</td>
-                    <td>{formatDateTime(application.created_at)}</td>
-                    <td>
-                      <div className="table-actions">
-                        <button
-                          className="primary-button table-action-btn"
-                          type="button"
-                          disabled={isProcessing}
-                          onClick={() => handleApprove(application)}
-                        >
-                          {isProcessing ? 'Processing...' : 'Approve'}
-                        </button>
-                        <button
-                          className="danger-button table-action-btn"
-                          type="button"
-                          disabled={isProcessing}
-                          onClick={() => void handleReject(application)}
-                        >
-                          {isProcessing ? 'Processing...' : 'Reject'}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                  <Fragment key={application.id}>
+                    <tr>
+                      <td>{application.full_name}</td>
+                      <td>{application.national_id}</td>
+                      <td>{formatDate(application.date_of_birth)}</td>
+                      <td>{application.email}</td>
+                      <td>{application.phone}</td>
+                      <td>{application.program}</td>
+                      <td>{formatDateTime(application.created_at)}</td>
+                      <td>
+                        <div className="table-actions">
+                          <button
+                            className="primary-button table-action-btn"
+                            type="button"
+                            disabled={isProcessing}
+                            onClick={() => handleApprove(application)}
+                          >
+                            {isProcessing ? 'Processing...' : 'Approve'}
+                          </button>
+                          <button
+                            className="danger-button table-action-btn"
+                            type="button"
+                            disabled={isProcessing}
+                            onClick={() => {
+                              if (isRejectingThisRow) {
+                                setRejectingId(null)
+                                setRejectReason('')
+                              } else {
+                                setRejectingId(application.id)
+                                setRejectReason('')
+                              }
+                            }}
+                          >
+                            {isRejectingThisRow ? 'Cancel' : 'Reject'}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    {isRejectingThisRow ? (
+                      <tr className="reject-row">
+                        <td colSpan={8}>
+                          <div className="reject-panel table-reject">
+                            <label htmlFor={`reject-reason-${application.id}`}>
+                              Rejection reason <span className="required-mark">(required to confirm)</span>
+                            </label>
+                            <textarea
+                              id={`reject-reason-${application.id}`}
+                              value={rejectReason}
+                              onChange={(e) => setRejectReason(e.target.value)}
+                              placeholder="Type a reason to enable Confirm. This text is not stored in the database."
+                              rows={4}
+                              required
+                              aria-required="true"
+                            />
+                            <div className="reject-actions">
+                              <button
+                                className="danger-button"
+                                type="button"
+                                disabled={isProcessing}
+                                onClick={() => void handleReject(application)}
+                              >
+                                {isProcessing ? 'Processing...' : 'Confirm rejection'}
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : null}
+                  </Fragment>
                 )
               })}
             </tbody>

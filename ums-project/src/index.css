@@ -363,6 +363,15 @@ button {
   margin: 4px 0 12px;
 }
 
+.required-mark {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.reject-actions {
+  margin-top: 10px;
+}
+
 .status-message {
   margin-top: 12px;
   color: #0f172a;
