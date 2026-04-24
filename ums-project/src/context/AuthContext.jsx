@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 
 const AuthContext = createContext(null)
@@ -52,144 +52,239 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [role, setRole] = useState(null)
   const [loading, setLoading] = useState(true)
+  const loadingRef = useRef(true)
+
+  const syncLoadingRef = (v) => {
+    loadingRef.current = v
+    setLoading(v)
+  }
 
   useEffect(() => {
     let isMounted = true
+    let bootstrapId = 0
+
+    const applyUserFromSession = async (activeSession) => {
+      if (!activeSession?.user?.id) {
+        if (isMounted) {
+          setRole(null)
+        }
+        return
+      }
+      try {
+        const detectedRole = await withTimeout(
+          resolveRole(activeSession.user.id),
+          'Role lookup',
+          ROLE_TIMEOUT_MS
+        )
+        if (isMounted) {
+          setRole(detectedRole)
+        }
+      } catch (roleError) {
+        console.error('Failed to resolve role', roleError)
+        if (isMounted) {
+          setRole(null)
+        }
+      }
+    }
+
+    const completeBootstrap = async (activeSession) => {
+      if (!isMounted) {
+        return
+      }
+      setSession(activeSession)
+      setUser(activeSession?.user ?? null)
+      await applyUserFromSession(activeSession)
+      if (isMounted) {
+        syncLoadingRef(false)
+      }
+    }
 
     const hydrateSession = async () => {
+      const myId = ++bootstrapId
       try {
-        setLoading(true)
+        syncLoadingRef(true)
 
         const { data, error } = await withTimeout(
           supabase.auth.getSession(),
-          'Session lookup'
+          'Session lookup',
+          AUTH_TIMEOUT_MS
         )
 
         if (error) {
           console.error('Failed to load session', error)
         }
 
-        const activeSession = data?.session ?? null
-        if (!isMounted) {
+        if (myId !== bootstrapId || !isMounted) {
           return
         }
 
-        setSession(activeSession)
-        setUser(activeSession?.user ?? null)
+        const activeSession = data?.session ?? null
 
-        if (activeSession?.user?.id) {
-          try {
-            const detectedRole = await withTimeout(
-              resolveRole(activeSession.user.id),
-              'Role lookup'
-            )
-            if (isMounted) {
-              setRole(detectedRole)
-            }
-          } catch (roleError) {
-            console.error('Failed to resolve role', roleError)
-            if (isMounted) {
-              setRole(null)
-            }
-          }
-        } else {
+        if (!activeSession) {
+          setSession(null)
+          setUser(null)
           setRole(null)
+          if (isMounted) {
+            syncLoadingRef(false)
+          }
+          return
         }
+
+        await completeBootstrap(activeSession)
       } catch (bootstrapError) {
         console.error('Auth bootstrap failed', bootstrapError)
         if (isMounted) {
           setSession(null)
           setUser(null)
           setRole(null)
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false)
+          syncLoadingRef(false)
         }
       }
     }
 
-    hydrateSession()
+    const recoverBootstrapIfStuck = async () => {
+      if (document.visibilityState !== 'visible' || !isMounted) {
+        return
+      }
+      if (!loadingRef.current) {
+        return
+      }
+      // Tab was in background: timers/ Promises can stall; re-fetch session and finish
+      const myId = ++bootstrapId
+      try {
+        const { data, error } = await withTimeout(
+          supabase.auth.getSession(),
+          'Session recovery',
+          AUTH_TIMEOUT_MS
+        )
+        if (error) {
+          console.error('Session recovery failed', error)
+        }
+        if (myId !== bootstrapId || !isMounted) {
+          return
+        }
+        const activeSession = data?.session ?? null
+        if (!activeSession) {
+          setSession(null)
+          setUser(null)
+          setRole(null)
+          syncLoadingRef(false)
+          return
+        }
+        await completeBootstrap(activeSession)
+      } catch (e) {
+        console.error('Session recovery error', e)
+        if (isMounted) {
+          syncLoadingRef(false)
+        }
+      }
+    }
+
+    void hydrateSession()
+
+    const onVisibility = () => {
+      void recoverBootstrapIfStuck()
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    window.addEventListener('focus', onVisibility)
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
+      if (!isMounted) {
+        return
+      }
+
       setSession(nextSession)
       setUser(nextSession?.user ?? null)
 
       if (!nextSession?.user?.id) {
         setRole(null)
-        setLoading(false)
+        syncLoadingRef(false)
         return
       }
 
-      setLoading(true)
+      // Do not toggle global `loading` here. Tab return / token refresh can fire
+      // SIGNED_IN or other events; blocking the app caused endless "Loading account…"
+      // Only the initial `hydrateSession` / `recoverBootstrapIfStuck` / login / logout
+      // control the full-page loader.
       try {
         const detectedRole = await withTimeout(
           resolveRole(nextSession.user.id),
           'Role lookup',
           ROLE_TIMEOUT_MS
         )
-        setRole(detectedRole)
+        if (isMounted) {
+          setRole(detectedRole)
+        }
       } catch (roleError) {
         console.error('Failed to resolve role', roleError)
-        setRole(null)
-      } finally {
-        setLoading(false)
+        if (isMounted) {
+          setRole(null)
+        }
       }
     })
 
     return () => {
       isMounted = false
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener('focus', onVisibility)
       subscription.unsubscribe()
     }
   }, [])
 
   const login = async (email, password) => {
-    setLoading(true)
+    syncLoadingRef(true)
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
 
     if (error) {
-      setLoading(false)
+      syncLoadingRef(false)
       throw error
     }
 
     const signedInUserId = data?.user?.id
     if (!signedInUserId) {
       await supabase.auth.signOut()
-      setLoading(false)
+      syncLoadingRef(false)
       throw new Error('No user was returned after sign-in.')
     }
 
-    const detectedRole = await resolveRole(signedInUserId)
+    let detectedRole
+    try {
+      detectedRole = await withTimeout(resolveRole(signedInUserId), 'Role lookup', ROLE_TIMEOUT_MS)
+    } catch (e) {
+      await supabase.auth.signOut()
+      syncLoadingRef(false)
+      throw e
+    }
 
     if (!detectedRole) {
       await supabase.auth.signOut()
-      setLoading(false)
+      syncLoadingRef(false)
       throw new Error('No profile found in staff or students table for this account.')
     }
 
     setRole(detectedRole)
-    setLoading(false)
+    syncLoadingRef(false)
     return detectedRole
   }
 
   const logout = async () => {
-    setLoading(true)
+    syncLoadingRef(true)
     const { error } = await supabase.auth.signOut()
 
     if (error) {
-      setLoading(false)
+      syncLoadingRef(false)
       throw error
     }
 
     setSession(null)
     setUser(null)
     setRole(null)
-    setLoading(false)
+    syncLoadingRef(false)
   }
 
   const value = useMemo(
