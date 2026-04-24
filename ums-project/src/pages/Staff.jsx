@@ -1,21 +1,33 @@
-import { useState } from "react";
-import { supabase } from "../supabaseClient";
+import { useState } from 'react'
+import { supabase } from '../lib/supabaseClient'
 
 export default function Staff() {
-  const [name, setName] = useState("");
+  const [name, setName] = useState('')
+  const [message, setMessage] = useState('')
 
   const addProfessor = async () => {
-    await supabase.from("staff").insert([
-      { name, role: "professor" }
-    ]);
-    alert("Professor added");
-  };
+    if (!name.trim()) {
+      setMessage('Name is required.')
+      return
+    }
+
+    const { error } = await supabase.from('staff').insert([{ name: name.trim(), role: 'professor' }])
+
+    if (error) {
+      setMessage('Failed to add professor.')
+      return
+    }
+
+    setName('')
+    setMessage('Professor added successfully.')
+  }
 
   return (
-    <div>
+    <section className="page-card">
       <h2>Add Professor</h2>
-      <input onChange={e => setName(e.target.value)} />
-      <button onClick={addProfessor}>Add</button>
-    </div>
-  );
+      <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Professor name" />
+      <button className="primary-button" onClick={addProfessor}>Add</button>
+      {message ? <p className="status-message">{message}</p> : null}
+    </section>
+  )
 }

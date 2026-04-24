@@ -1,26 +1,26 @@
-import { useEffect, useState } from "react";
-import { supabase } from "../supabaseClient";
+import { useEffect, useState } from 'react'
+import { supabase } from '../lib/supabaseClient'
 
 export default function Rooms() {
-  const [rooms, setRooms] = useState([]);
+  const [rooms, setRooms] = useState([])
 
   useEffect(() => {
-    fetchRooms();
-  }, []);
+    fetchRooms()
+  }, [])
 
   const fetchRooms = async () => {
-    let { data } = await supabase.from("rooms").select("*");
-    setRooms(data);
-  };
+    const { data } = await supabase.from('rooms').select('*')
+    setRooms(data ?? [])
+  }
 
   return (
-    <div>
+    <section className="page-card">
       <h2>Rooms</h2>
-      {rooms.map(room => (
-        <div key={room.id}>
+      {rooms.map((room) => (
+        <div key={room.id} className="list-row">
           {room.name} - Capacity: {room.capacity}
         </div>
       ))}
-    </div>
-  );
+    </section>
+  )
 }
