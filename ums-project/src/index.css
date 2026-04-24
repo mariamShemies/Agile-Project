@@ -25,7 +25,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -168,6 +169,104 @@ button {
   background: #fff;
 }
 
+.application-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  max-width: 560px;
+}
+
+.review-grid {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.review-card {
+  border: 1px solid #dbe4f0;
+  border-radius: 16px;
+  padding: 14px;
+  background: #fff;
+}
+
+.review-card h3 {
+  margin: 0 0 8px;
+}
+
+.review-card p {
+  margin: 4px 0;
+}
+
+.review-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.danger-button {
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 600;
+  color: #fff;
+  background: #b91c1c;
+}
+
+.danger-button:hover {
+  background: #991b1b;
+}
+
+.danger-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.reject-panel {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+  max-width: 520px;
+}
+
+.reject-panel label {
+  font-weight: 600;
+}
+
+.reject-panel textarea {
+  font: inherit;
+  border: 1px solid #dbe4f0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-field label {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.form-select {
+  width: 100%;
+  max-width: 420px;
+  border: 1px solid #dbe4f0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin: 10px 0;
+  background: #fff;
+}
+
+.field-error {
+  margin-top: -2px;
+  margin-bottom: 0;
+  color: #b91c1c;
+  font-size: 0.92rem;
+}
+
 .list-row {
   display: flex;
   align-items: center;
@@ -195,6 +294,10 @@ button {
 .status-message {
   margin-top: 12px;
   color: #0f172a;
+}
+
+.success-message {
+  color: #166534;
 }
 
 .error-message {
@@ -253,5 +356,10 @@ button {
   .list-row {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .review-actions {
+    flex-direction: column;
+    align-items: stretch;
   }
 }

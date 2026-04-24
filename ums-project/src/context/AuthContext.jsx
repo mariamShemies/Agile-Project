@@ -25,7 +25,7 @@ async function withTimeout(promise, label, timeoutMs = AUTH_TIMEOUT_MS) {
 async function resolveRole(userId) {
   const [staffResult, studentResult] = await Promise.all([
     supabase.from('staff').select('id').eq('id', userId).maybeSingle(),
-    supabase.from('students').select('id').eq('id', userId).maybeSingle(),
+    supabase.from('students').select('student_id').eq('student_id', userId).maybeSingle(),
   ])
 
   if (staffResult.error) {

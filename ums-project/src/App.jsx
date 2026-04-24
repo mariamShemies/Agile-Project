@@ -1,5 +1,6 @@
 import { BrowserRouter, NavLink, Navigate, Route, Routes } from 'react-router-dom'
 import Applications from './pages/Applications.jsx'
+import ApplicationsReview from './pages/ApplicationsReview.jsx'
 import Login from './pages/Login.jsx'
 import Rooms from './pages/Rooms.jsx'
 import Staff from './pages/Staff.jsx'
@@ -36,14 +37,14 @@ function AppLayout() {
     role === 'staff'
       ? [
           { to: '/staff-dashboard', label: 'Dashboard' },
-          { to: '/applications', label: 'Applications' },
+          { to: '/applications', label: 'Applications Submit' },
+          { to: '/applications-review', label: 'Applications Review' },
           { to: '/rooms', label: 'Rooms' },
           { to: '/staff', label: 'Staff' },
           { to: '/subjects', label: 'Subjects' },
         ]
       : [
           { to: '/student-dashboard', label: 'Dashboard' },
-          { to: '/applications', label: 'Applications' },
           { to: '/subjects', label: 'Subjects' },
         ]
 
@@ -76,7 +77,8 @@ function AppLayout() {
         <Routes>
           <Route path="/staff-dashboard" element={<StaffDashboard />} />
           <Route path="/student-dashboard" element={<StudentDashboard />} />
-          <Route path="/applications" element={<Applications />} />
+          {role === 'staff' ? <Route path="/applications" element={<Applications />} /> : null}
+          {role === 'staff' ? <Route path="/applications-review" element={<ApplicationsReview />} /> : null}
           <Route path="/subjects" element={<Subjects />} />
           {role === 'staff' ? <Route path="/rooms" element={<Rooms />} /> : null}
           {role === 'staff' ? <Route path="/staff" element={<Staff />} /> : null}
