@@ -39,18 +39,18 @@ function AppLayout() {
     role === 'staff'
       ? [
           { to: '/staff-dashboard', label: 'Dashboard' },
-          { to: '/applications', label: 'Submit application' },
-          { to: '/applications-review', label: 'Review applications' },
-          { to: '/rooms', label: 'Room availability' },
-          { to: '/staff', label: 'Staff' },
-          { to: '/directory', label: 'Directory' },
-          { to: '/subjects', label: 'Course catalog' },
-          { to: '/subjects-manage', label: 'Manage subjects' },
+          { to: '/applications', label: 'Applications' },
+          { to: '/applications-review', label: 'Application Reviews' },
+          { to: '/rooms', label: 'Room Availability' },
+          { to: '/staff', label: 'Add New Staff' },
+          { to: '/directory', label: 'Staff Directory' },
+          { to: '/subjects', label: 'Course Catalog' },
+          { to: '/subjects-manage', label: 'Manage Courses' },
         ]
       : [
           { to: '/student-dashboard', label: 'Dashboard' },
-          { to: '/directory', label: 'Directory' },
-          { to: '/subjects', label: 'Course catalog' },
+          { to: '/directory', label: 'Staff Directory' },
+          { to: '/subjects', label: 'Course Catalog' },
         ]
 
   const navLinkClass = ({ isActive }) =>
