@@ -3,7 +3,7 @@ import { BrowserRouter, NavLink, Navigate, Route, Routes } from 'react-router-do
 import Applications from './pages/Applications.jsx'
 import ApplicationsReview from './pages/ApplicationsReview.jsx'
 import Login from './pages/Login.jsx'
-import RoomAvailabilityPage from './pages/RoomAvailabilityPage.jsx'
+import RoomReservationPage from './pages/RoomReservationPage.jsx'
 import Staff from './pages/Staff.jsx'
 import StaffDirectory from './pages/StaffDirectory.jsx'
 import ManageSubjectsPage from './pages/ManageSubjectsPage.jsx'
@@ -66,7 +66,7 @@ function StaffDashboard() {
           supabase.from('rooms').select('id, room_number, type, capacity'),
           supabase
             .from('reservations')
-            .select('room_id, date, start_time, end_time')
+            .select('room_id, date, start_time, end_time, status')
             .eq('date', today),
         ])
 
@@ -220,7 +220,7 @@ function AppLayout() {
           { to: '/assign-instructors', label: 'Assign Instructors' },
           { to: '/applications', label: 'Applications' },
           { to: '/applications-review', label: 'Application Reviews' },
-          { to: '/rooms', label: 'Room Availability' },
+          { to: '/rooms', label: 'Room reservations' },
           { to: '/staff', label: 'Add New Staff' },
           { to: '/directory', label: 'Staff Directory' },
           { to: '/subjects', label: 'Course Catalog' },
@@ -268,7 +268,7 @@ function AppLayout() {
           {role === 'staff' ? <Route path="/applications-review" element={<ApplicationsReview />} /> : null}
           <Route path="/subjects" element={<Subjects />} />
           {role === 'staff' ? <Route path="/subjects-manage" element={<ManageSubjectsPage />} /> : null}
-          {role === 'staff' ? <Route path="/rooms" element={<RoomAvailabilityPage />} /> : null}
+          {role === 'staff' ? <Route path="/rooms" element={<RoomReservationPage />} /> : null}
           {role === 'staff' ? <Route path="/staff" element={<Staff />} /> : null}
           <Route
             path="*"

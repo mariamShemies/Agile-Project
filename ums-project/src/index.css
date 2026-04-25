@@ -802,6 +802,33 @@ button {
   color: #b91c1c;
 }
 
+/* High-visibility alerts (e.g., booking conflicts) */
+.alert-banner {
+  margin-top: 12px;
+  border-radius: 16px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  padding: 12px 14px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #7f1d1d;
+}
+
+.alert-banner strong {
+  color: #7f1d1d;
+}
+
+/* Softer inline alerts (preferred for forms) */
+.alert-inline {
+  margin-top: 10px;
+  border-radius: 14px;
+  border: 1px solid #fecaca;
+  background: #fff5f5;
+  padding: 10px 12px;
+  font-weight: 650;
+  color: #991b1b;
+}
+
 .auth-shell {
   min-height: 100vh;
   display: grid;
@@ -1214,5 +1241,78 @@ button {
 
 .assignment-summary p {
   margin: 0;
+}
+
+/* Room reservation page */
+.room-reservation-layout {
+  margin-top: 16px;
+  display: grid;
+  gap: 16px;
+  align-items: start;
+}
+
+.room-reservation-page .review-card {
+  min-width: 0;
+}
+
+.room-reservation-layout-stack {
+  grid-template-columns: 1fr;
+}
+
+.room-reservation-card {
+  width: 100%;
+}
+
+.room-reservation-card .student-details-grid {
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+}
+
+.room-reservation-card .student-details-grid .form-field {
+  min-width: 0;
+}
+
+.schedule-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-top: 0;
+}
+
+.schedule-toolbar-left {
+  display: grid;
+  gap: 6px;
+  flex: 1 1 220px;
+  min-width: 220px;
+}
+
+.schedule-toolbar-left label {
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.schedule-toolbar-left input[type='date'] {
+  width: 100%;
+  max-width: 280px;
+  border: 1px solid #dbe4f0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #fff;
+}
+
+.schedule-toolbar-right {
+  display: flex;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 720px) {
+  .room-reservation-card .student-details-grid {
+    grid-template-columns: 1fr;
+  }
+  .schedule-toolbar-left input[type='date'] {
+    max-width: none;
+  }
 }
 
