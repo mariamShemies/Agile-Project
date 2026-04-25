@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { validateApplicationForm } from '../lib/applicationValidation'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 
@@ -17,15 +18,34 @@ export default function Applications() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [feedbackState, setFeedbackState] = useState('idle')
   const [feedbackMessage, setFeedbackMessage] = useState('')
+  const [fieldErrors, setFieldErrors] = useState({})
 
   const updateField = (field) => (event) => {
     setForm((prev) => ({ ...prev, [field]: event.target.value }))
+    setFieldErrors((prev) => {
+      if (!prev[field]) {
+        return prev
+      }
+      const next = { ...prev }
+      delete next[field]
+      return next
+    })
   }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
     setFeedbackState('idle')
     setFeedbackMessage('')
+    setFieldErrors({})
+
+    const validation = validateApplicationForm(form)
+    if (!validation.ok) {
+      setFeedbackState('error')
+      setFeedbackMessage(validation.message)
+      setFieldErrors(validation.fieldErrors)
+      return
+    }
+    const v = validation.values
 
     const applicationId = crypto.randomUUID()
     const nowIso = new Date().toISOString()
@@ -35,12 +55,12 @@ export default function Applications() {
       const { error } = await supabase.from('applications').insert([
         {
           id: applicationId,
-          full_name: form.full_name.trim(),
-          national_id: form.national_id.trim(),
-          date_of_birth: form.date_of_birth,
-          email: form.email.trim(),
-          phone: form.phone.trim(),
-          program: form.program.trim(),
+          full_name: v.full_name,
+          national_id: v.national_id,
+          date_of_birth: v.date_of_birth,
+          email: v.email,
+          phone: v.phone,
+          program: v.program,
           status: 'Pending',
           created_at: nowIso,
         },
@@ -51,10 +71,12 @@ export default function Applications() {
       }
 
       setForm(initialForm)
+      setFieldErrors({})
       setFeedbackState('success')
       setFeedbackMessage('Application submitted successfully and is pending review')
     } catch (error) {
       console.error('Failed to submit application', error)
+      setFieldErrors({})
       setFeedbackState('error')
       setFeedbackMessage(error.message || 'Failed to submit application. Please try again.')
     } finally {
@@ -77,7 +99,7 @@ export default function Applications() {
       <h2>New application</h2>
       <p>Enter the applicant’s details. The record is saved immediately as Pending; approval happens separately in Review.</p>
 
-      <form className="application-form" onSubmit={handleSubmit}>
+      <form className="application-form" onSubmit={handleSubmit} noValidate>
         <div className="form-field">
           <label htmlFor="full_name">Full name</label>
           <input
@@ -86,9 +108,16 @@ export default function Applications() {
             value={form.full_name}
             onChange={updateField('full_name')}
             autoComplete="name"
-            required
+            aria-required="true"
+            aria-invalid={fieldErrors.full_name ? 'true' : 'false'}
+            aria-describedby={fieldErrors.full_name ? 'full_name-error' : undefined}
             disabled={isSubmitting}
           />
+          {fieldErrors.full_name ? (
+            <p className="field-error" id="full_name-error" role="alert">
+              {fieldErrors.full_name}
+            </p>
+          ) : null}
         </div>
 
         <div className="form-field">
@@ -98,9 +127,16 @@ export default function Applications() {
             name="national_id"
             value={form.national_id}
             onChange={updateField('national_id')}
-            required
+            aria-required="true"
+            aria-invalid={fieldErrors.national_id ? 'true' : 'false'}
+            aria-describedby={fieldErrors.national_id ? 'national_id-error' : undefined}
             disabled={isSubmitting}
           />
+          {fieldErrors.national_id ? (
+            <p className="field-error" id="national_id-error" role="alert">
+              {fieldErrors.national_id}
+            </p>
+          ) : null}
         </div>
 
         <div className="form-field">
@@ -111,9 +147,16 @@ export default function Applications() {
             type="date"
             value={form.date_of_birth}
             onChange={updateField('date_of_birth')}
-            required
+            aria-required="true"
+            aria-invalid={fieldErrors.date_of_birth ? 'true' : 'false'}
+            aria-describedby={fieldErrors.date_of_birth ? 'date_of_birth-error' : undefined}
             disabled={isSubmitting}
           />
+          {fieldErrors.date_of_birth ? (
+            <p className="field-error" id="date_of_birth-error" role="alert">
+              {fieldErrors.date_of_birth}
+            </p>
+          ) : null}
         </div>
 
         <div className="form-field">
@@ -125,9 +168,12 @@ export default function Applications() {
             value={form.email}
             onChange={updateField('email')}
             autoComplete="email"
-            required
+            aria-required="true"
+            aria-invalid={fieldErrors.email ? 'true' : 'false'}
+            aria-describedby={fieldErrors.email ? 'email-error' : undefined}
             disabled={isSubmitting}
           />
+          {fieldErrors.email ? <p className="field-error" id="email-error" role="alert">{fieldErrors.email}</p> : null}
         </div>
 
         <div className="form-field">
@@ -139,9 +185,12 @@ export default function Applications() {
             value={form.phone}
             onChange={updateField('phone')}
             autoComplete="tel"
-            required
+            aria-required="true"
+            aria-invalid={fieldErrors.phone ? 'true' : 'false'}
+            aria-describedby={fieldErrors.phone ? 'phone-error' : undefined}
             disabled={isSubmitting}
           />
+          {fieldErrors.phone ? <p className="field-error" id="phone-error" role="alert">{fieldErrors.phone}</p> : null}
         </div>
 
         <div className="form-field">
@@ -151,10 +200,13 @@ export default function Applications() {
             name="program"
             value={form.program}
             onChange={updateField('program')}
-            required
+            aria-required="true"
+            aria-invalid={fieldErrors.program ? 'true' : 'false'}
+            aria-describedby={fieldErrors.program ? 'program-error' : undefined}
             disabled={isSubmitting}
             placeholder="e.g. BSc Computer Science"
           />
+          {fieldErrors.program ? <p className="field-error" id="program-error" role="alert">{fieldErrors.program}</p> : null}
         </div>
 
         <div>

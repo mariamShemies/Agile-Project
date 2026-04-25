@@ -4,6 +4,7 @@ import ApplicationsReview from './pages/ApplicationsReview.jsx'
 import Login from './pages/Login.jsx'
 import RoomAvailabilityPage from './pages/RoomAvailabilityPage.jsx'
 import Staff from './pages/Staff.jsx'
+import ManageSubjectsPage from './pages/ManageSubjectsPage.jsx'
 import Subjects from './pages/Subjects.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import { useAuth } from './context/AuthContext.jsx'
@@ -41,11 +42,12 @@ function AppLayout() {
           { to: '/applications-review', label: 'Review applications' },
           { to: '/rooms', label: 'Room availability' },
           { to: '/staff', label: 'Staff' },
-          { to: '/subjects', label: 'Subjects' },
+          { to: '/subjects', label: 'Course catalog' },
+          { to: '/subjects-manage', label: 'Manage subjects' },
         ]
       : [
           { to: '/student-dashboard', label: 'Dashboard' },
-          { to: '/subjects', label: 'Subjects' },
+          { to: '/subjects', label: 'Course catalog' },
         ]
 
   const navLinkClass = ({ isActive }) =>
@@ -80,6 +82,7 @@ function AppLayout() {
           {role === 'staff' ? <Route path="/applications" element={<Applications />} /> : null}
           {role === 'staff' ? <Route path="/applications-review" element={<ApplicationsReview />} /> : null}
           <Route path="/subjects" element={<Subjects />} />
+          {role === 'staff' ? <Route path="/subjects-manage" element={<ManageSubjectsPage />} /> : null}
           {role === 'staff' ? <Route path="/rooms" element={<RoomAvailabilityPage />} /> : null}
           {role === 'staff' ? <Route path="/staff" element={<Staff />} /> : null}
           <Route

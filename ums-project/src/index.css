@@ -267,6 +267,94 @@ button {
   font-size: 0.92rem;
 }
 
+.page-card .content-link,
+.page-card a:not(.nav-link) {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.manage-subjects-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+  margin: 12px 0 16px;
+}
+
+.manage-subjects-toolbar .form-field {
+  flex: 1 1 240px;
+  min-width: 0;
+  margin: 0;
+}
+
+.manage-subjects-search {
+  width: 100%;
+  max-width: 420px;
+  border: 1px solid #dbe4f0;
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.subject-code-readonly {
+  font-weight: 600;
+  color: #334155;
+}
+
+.manage-subjects-input {
+  width: 100%;
+  min-width: 0;
+  max-width: 220px;
+  border: 1px solid #dbe4f0;
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 0.9rem;
+}
+
+.manage-subjects-select {
+  max-width: 200px;
+  width: 100%;
+  margin: 0;
+}
+
+.danger-text-btn {
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+.danger-text-btn:hover:not(:disabled) {
+  background: #fee2e2;
+}
+
+.create-subject-block {
+  margin: 0 0 8px;
+  padding: 16px 0 0;
+  border-top: 1px solid #e2e8f0;
+}
+
+.create-subject-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.2rem;
+}
+
+.subjects-list-heading {
+  font-size: 1.1rem;
+  margin: 20px 0 8px;
+}
+
+.subjects-list-meta {
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.subjects-list-row {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
 .list-row {
   display: flex;
   align-items: center;
@@ -446,6 +534,12 @@ button {
   color: #a16207;
   background: #fef9c3;
   border: 1px solid #fde047;
+}
+
+.room-status-inactive {
+  color: #64748b;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
 }
 
 .modal-backdrop {
