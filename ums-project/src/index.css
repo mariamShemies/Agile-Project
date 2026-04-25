@@ -128,6 +128,26 @@ button {
   cursor: not-allowed;
 }
 
+.secondary-button {
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 600;
+  color: #334155;
+  background: #f8fafc;
+  cursor: pointer;
+}
+
+.secondary-button:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+}
+
+.secondary-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .content-area {
   max-width: 1100px;
   margin: 0 auto;
@@ -720,4 +740,137 @@ button {
     flex-direction: column;
     align-items: stretch;
   }
+
+  .directory-search-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .directory-search-btn {
+    width: 100%;
+  }
+
+  .directory-results {
+    grid-template-columns: 1fr;
+  }
 }
+
+/* Staff Directory Page Styles */
+.directory-search-form {
+  margin-top: 20px;
+}
+
+.directory-search-bar {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 16px;
+  align-items: flex-end;
+  margin: 0;
+}
+
+.directory-search-btn {
+  height: fit-content;
+  padding: 10px 20px;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.directory-search-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.directory-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.directory-card {
+  border: 1px solid #dbe4f0;
+  border-radius: 16px;
+  padding: 16px;
+  background: #fff;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.directory-card:hover {
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.1);
+  transform: translateY(-2px);
+}
+
+.directory-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.directory-card-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  flex: 1;
+  color: #0f172a;
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.role-badge-professor {
+  background: #dbeafe;
+  color: #0c4a6e;
+  border: 1px solid #bfdbfe;
+}
+
+.role-badge-ta {
+  background: #f3e8ff;
+  color: #6b21a8;
+  border: 1px solid #e9d5ff;
+}
+
+.directory-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.directory-card-body p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: #475569;
+}
+
+.directory-card-body strong {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.supervisor-info {
+  margin-top: 8px !important;
+  padding-top: 8px;
+  border-top: 1px solid #e2e8f0;
+  color: #1e40af;
+  font-size: 0.9rem;
+}
+
+.supervisor-role {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-style: italic;
+  font-weight: normal;
+}
+

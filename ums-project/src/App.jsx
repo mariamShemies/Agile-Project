@@ -4,6 +4,7 @@ import ApplicationsReview from './pages/ApplicationsReview.jsx'
 import Login from './pages/Login.jsx'
 import RoomAvailabilityPage from './pages/RoomAvailabilityPage.jsx'
 import Staff from './pages/Staff.jsx'
+import StaffDirectory from './pages/StaffDirectory.jsx'
 import ManageSubjectsPage from './pages/ManageSubjectsPage.jsx'
 import Subjects from './pages/Subjects.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
@@ -42,11 +43,13 @@ function AppLayout() {
           { to: '/applications-review', label: 'Review applications' },
           { to: '/rooms', label: 'Room availability' },
           { to: '/staff', label: 'Staff' },
+          { to: '/directory', label: 'Directory' },
           { to: '/subjects', label: 'Course catalog' },
           { to: '/subjects-manage', label: 'Manage subjects' },
         ]
       : [
           { to: '/student-dashboard', label: 'Dashboard' },
+          { to: '/directory', label: 'Directory' },
           { to: '/subjects', label: 'Course catalog' },
         ]
 
@@ -77,6 +80,7 @@ function AppLayout() {
 
       <main className="content-area">
         <Routes>
+          <Route path="/directory" element={<StaffDirectory />} />
           <Route path="/staff-dashboard" element={<StaffDashboard />} />
           <Route path="/student-dashboard" element={<StudentDashboard />} />
           {role === 'staff' ? <Route path="/applications" element={<Applications />} /> : null}

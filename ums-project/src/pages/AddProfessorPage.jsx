@@ -1,26 +1,33 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import {
+  fetchProfessorSupervisors,
   generateNextEmployeeId,
-  insertProfessor,
-  validateAddProfessorForm,
+  insertStaffMember,
+  STAFF_ROLE_PROFESSOR,
+  STAFF_ROLE_TA,
+  validateAddStaffForm,
 } from '../lib/staffDirectory'
 
 const initialForm = {
+  role: STAFF_ROLE_PROFESSOR,
   full_name: '',
   employee_id: '',
   department: '',
   email: '',
   office_location: '',
+  supervisor_id: '',
 }
 
 /**
- * HR: add a professor to the staff directory (Supabase `staff` table, role = Professor).
+ * HR: add staff members (Professor or TA) to the directory.
  * @param {{ onAdded?: () => void | Promise<void> }} props
  */
 export default function AddProfessorPage({ onAdded }) {
   const { role } = useAuth()
   const [form, setForm] = useState(() => ({ ...initialForm }))
+  const [professors, setProfessors] = useState([])
+  const [isLoadingProfessors, setIsLoadingProfessors] = useState(false)
   const [useAutoEmployeeId, setUseAutoEmployeeId] = useState(true)
   const [suggestedEmployeeId, setSuggestedEmployeeId] = useState('')
   const [isResolvingId, setIsResolvingId] = useState(false)
@@ -43,15 +50,45 @@ export default function AddProfessorPage({ onAdded }) {
     }
   }, [])
 
+  const refreshProfessorSupervisors = useCallback(async () => {
+    setIsLoadingProfessors(true)
+    setErrorMessage('')
+    try {
+      const rows = await fetchProfessorSupervisors()
+      setProfessors(rows)
+    } catch (e) {
+      console.error('fetchProfessorSupervisors', e)
+      setProfessors([])
+      setErrorMessage(e.message || 'Could not load professor supervisors.')
+    } finally {
+      setIsLoadingProfessors(false)
+    }
+  }, [])
+
   useEffect(() => {
     if (useAutoEmployeeId && role === 'staff') {
       void refreshSuggestedId()
     }
   }, [useAutoEmployeeId, role, refreshSuggestedId])
 
+  useEffect(() => {
+    if (role === 'staff') {
+      void refreshProfessorSupervisors()
+    }
+  }, [refreshProfessorSupervisors, role])
+
   const updateField = (field) => (event) => {
     const { value } = event.target
-    setForm((prev) => ({ ...prev, [field]: value }))
+    setForm((prev) => {
+      if (field === 'role') {
+        return {
+          ...prev,
+          role: value,
+          supervisor_id: value === STAFF_ROLE_TA ? prev.supervisor_id : '',
+        }
+      }
+      return { ...prev, [field]: value }
+    })
   }
 
   const runSubmit = async () => {
@@ -60,13 +97,13 @@ export default function AddProfessorPage({ onAdded }) {
       employee_id = await generateNextEmployeeId()
     }
 
-    const validation = validateAddProfessorForm({ ...form, employee_id })
+    const validation = validateAddStaffForm({ ...form, employee_id })
     if (!validation.ok) {
       setErrorMessage(validation.message)
       return
     }
 
-    const result = await insertProfessor(validation.values)
+    const result = await insertStaffMember(validation.values)
     if (!result.ok) {
       if (result.code === 'duplicate' && useAutoEmployeeId) {
         await refreshSuggestedId()
@@ -77,11 +114,16 @@ export default function AddProfessorPage({ onAdded }) {
 
     setForm({ ...initialForm })
     setErrorMessage('')
-    setSuccessMessage('Professor added to the staff directory.')
+    setSuccessMessage(
+      validation.values.role === STAFF_ROLE_TA
+        ? 'Teaching Assistant added to the staff directory.'
+        : 'Professor added to the staff directory.'
+    )
     window.setTimeout(() => setSuccessMessage(''), 5000)
     if (useAutoEmployeeId) {
       void refreshSuggestedId()
     }
+    void refreshProfessorSupervisors()
     if (onAdded) {
       await onAdded()
     }
@@ -96,7 +138,7 @@ export default function AddProfessorPage({ onAdded }) {
       return
     }
 
-    const preCheck = validateAddProfessorForm(form, { skipEmployeeId: useAutoEmployeeId })
+    const preCheck = validateAddStaffForm(form, { skipEmployeeId: useAutoEmployeeId })
     if (!preCheck.ok) {
       setErrorMessage(preCheck.message)
       return
@@ -106,7 +148,7 @@ export default function AddProfessorPage({ onAdded }) {
     try {
       await runSubmit()
     } catch (e) {
-      console.error('Add professor failed', e)
+      console.error('Add staff member failed', e)
       setErrorMessage(e.message || 'Something went wrong.')
     } finally {
       setIsSubmitting(false)
@@ -120,13 +162,28 @@ export default function AddProfessorPage({ onAdded }) {
   return (
     <div className="add-professor-block">
       <p className="eyebrow">HR</p>
-      <h3 className="add-professor-title">Add professor to directory</h3>
+      <h3 className="add-professor-title">Add staff to directory</h3>
       <p className="room-availability-intro">
-        New records are stored with <strong>role: Professor</strong>. Employee ID must be unique. You can use an
-        auto-generated code (e.g. EMP-001) or enter your own.
+        Use one form to add <strong>Professors</strong> and <strong>Teaching Assistants (TAs)</strong>. TAs must be
+        assigned to a supervisor professor.
       </p>
 
       <form className="application-form" onSubmit={(e) => void handleSubmit(e)} noValidate>
+        <div className="form-field">
+          <label htmlFor="staff_role">Role</label>
+          <select
+            id="staff_role"
+            name="role"
+            className="form-select"
+            value={form.role}
+            onChange={updateField('role')}
+            disabled={isSubmitting}
+          >
+            <option value={STAFF_ROLE_PROFESSOR}>Professor</option>
+            <option value={STAFF_ROLE_TA}>TA</option>
+          </select>
+        </div>
+
         <div className="form-field form-field-row">
           <label className="form-field-checkbox">
             <input
@@ -182,6 +239,36 @@ export default function AddProfessorPage({ onAdded }) {
           </p>
         </div>
 
+        {form.role === STAFF_ROLE_TA ? (
+          <div className="form-field">
+            <label htmlFor="supervisor_id">Supervisor Professor</label>
+            <select
+              id="supervisor_id"
+              name="supervisor_id"
+              className="form-select"
+              value={form.supervisor_id}
+              onChange={updateField('supervisor_id')}
+              disabled={isSubmitting || isLoadingProfessors}
+              aria-required="true"
+            >
+              <option value="">Select a professor</option>
+              {professors.map((prof) => (
+                <option key={String(prof.id)} value={String(prof.id)}>
+                  {String(prof.full_name ?? prof.name ?? 'Unnamed professor')}
+                  {prof.employee_id ? ` (${String(prof.employee_id)})` : ''}
+                </option>
+              ))}
+            </select>
+            <p className="field-hint">
+              {isLoadingProfessors
+                ? 'Loading professors…'
+                : professors.length === 0
+                  ? 'No professors found. Add at least one professor before creating a TA.'
+                  : 'Required for TA records.'}
+            </p>
+          </div>
+        ) : null}
+
         <div className="form-field">
           <label htmlFor="prof_full_name">Full name</label>
           <input
@@ -223,14 +310,14 @@ export default function AddProfessorPage({ onAdded }) {
             name="office_location"
             value={form.office_location}
             onChange={updateField('office_location')}
-            placeholder="e.g. Science Bldg, Room 201"
+            placeholder="Optional"
             disabled={isSubmitting}
           />
         </div>
 
         <div>
           <button className="primary-button" type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Saving…' : 'Add professor'}
+            {isSubmitting ? 'Saving…' : 'Add staff member'}
           </button>
         </div>
       </form>
