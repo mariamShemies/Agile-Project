@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { BrowserRouter, NavLink, Navigate, Route, Routes } from 'react-router-dom'
 import Applications from './pages/Applications.jsx'
 import ApplicationsReview from './pages/ApplicationsReview.jsx'
@@ -9,25 +10,199 @@ import ManageSubjectsPage from './pages/ManageSubjectsPage.jsx'
 import Subjects from './pages/Subjects.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import { useAuth } from './context/AuthContext.jsx'
+import { getLocalDateString, mergeRoomsWithAvailability } from './lib/roomAvailability'
+import { supabase } from './lib/supabaseClient'
 
 function StaffDashboard() {
+  const { user } = useAuth()
+  const [staffName, setStaffName] = useState('Admin')
+  const [summary, setSummary] = useState({
+    students: 0,
+    staff: 0,
+    courses: 0,
+    pendingApplications: 0,
+    availableRooms: 0,
+  })
+  const [isLoadingSummary, setIsLoadingSummary] = useState(true)
+
+  useEffect(() => {
+    let isMounted = true
+
+    const fallbackName = () => {
+      const raw = String(user?.email ?? '').split('@')[0]
+      const pretty = raw
+        .replace(/[._-]+/g, ' ')
+        .trim()
+        .replace(/\b\w/g, (m) => m.toUpperCase())
+      return pretty || 'Admin'
+    }
+
+    const loadDashboard = async () => {
+      setIsLoadingSummary(true)
+      try {
+        const today = getLocalDateString()
+
+        const [
+          staffProfile,
+          studentsCount,
+          staffCount,
+          coursesCount,
+          pendingApplicationsCount,
+          roomsResult,
+          reservationsResult,
+        ] = await Promise.all([
+          user?.id
+            ? supabase.from('staff').select('full_name').eq('id', user.id).maybeSingle()
+            : Promise.resolve({ data: null, error: null }),
+          supabase.from('students').select('student_id', { count: 'exact', head: true }),
+          supabase.from('staff').select('id', { count: 'exact', head: true }),
+          supabase.from('subjects').select('id', { count: 'exact', head: true }),
+          supabase
+            .from('applications')
+            .select('id', { count: 'exact', head: true })
+            .in('status', ['Pending', 'pending']),
+          supabase.from('rooms').select('id, room_number, type, capacity'),
+          supabase
+            .from('reservations')
+            .select('room_id, date, start_time, end_time')
+            .eq('date', today),
+        ])
+
+        if (staffProfile?.error) throw staffProfile.error
+        if (studentsCount?.error) throw studentsCount.error
+        if (staffCount?.error) throw staffCount.error
+        if (coursesCount?.error) throw coursesCount.error
+        if (pendingApplicationsCount?.error) throw pendingApplicationsCount.error
+        if (roomsResult?.error) throw roomsResult.error
+        if (reservationsResult?.error) throw reservationsResult.error
+
+        const mergedRooms = mergeRoomsWithAvailability(roomsResult.data ?? [], reservationsResult.data ?? [])
+        const freeRooms = mergedRooms.filter((r) => r.status === 'Free').length
+
+        if (!isMounted) return
+
+        setStaffName(staffProfile?.data?.full_name || fallbackName())
+        setSummary({
+          students: studentsCount?.count ?? 0,
+          staff: staffCount?.count ?? 0,
+          courses: coursesCount?.count ?? 0,
+          pendingApplications: pendingApplicationsCount?.count ?? 0,
+          availableRooms: freeRooms,
+        })
+      } catch (e) {
+        console.error('Failed to load staff dashboard summary', e)
+        if (!isMounted) return
+        setStaffName(fallbackName())
+      } finally {
+        if (isMounted) {
+          setIsLoadingSummary(false)
+        }
+      }
+    }
+
+    void loadDashboard()
+
+    return () => {
+      isMounted = false
+    }
+  }, [user])
+
   return (
     <section className="page-card">
       <p className="eyebrow">University Management System</p>
-      <h1>Staff Dashboard</h1>
-      <p>
-        Manage applications, rooms, staff records, and subjects from one place.
-      </p>
+      <h1>Welcome back, {staffName} 👋</h1>
+      <p>Here&apos;s what&apos;s happening today.</p>
+
+      <div className="dashboard-summary-grid" aria-label="Staff dashboard summary">
+        <article className="dashboard-summary-card">
+          <p className="dashboard-summary-value">{isLoadingSummary ? '...' : summary.students}</p>
+          <p className="dashboard-summary-label">Total Students</p>
+        </article>
+        <article className="dashboard-summary-card">
+          <p className="dashboard-summary-value">{isLoadingSummary ? '...' : summary.staff}</p>
+          <p className="dashboard-summary-label">Total Staff</p>
+        </article>
+        <article className="dashboard-summary-card">
+          <p className="dashboard-summary-value">{isLoadingSummary ? '...' : summary.courses}</p>
+          <p className="dashboard-summary-label">Total Courses</p>
+        </article>
+        <article className="dashboard-summary-card">
+          <p className="dashboard-summary-value">{isLoadingSummary ? '...' : summary.pendingApplications}</p>
+          <p className="dashboard-summary-label">Pending Applications</p>
+        </article>
+        <article className="dashboard-summary-card">
+          <p className="dashboard-summary-value">{isLoadingSummary ? '...' : summary.availableRooms}</p>
+          <p className="dashboard-summary-label">Available Rooms</p>
+        </article>
+      </div>
     </section>
   )
 }
 
 function StudentDashboard() {
+  const { user } = useAuth()
+  const [summary, setSummary] = useState({ courses: 0, staff: 0 })
+  const [isLoadingSummary, setIsLoadingSummary] = useState(true)
+  const studentName = (() => {
+    const raw = String(user?.email ?? '').split('@')[0]
+    const pretty = raw
+      .replace(/[._-]+/g, ' ')
+      .trim()
+      .replace(/\b\w/g, (m) => m.toUpperCase())
+    return pretty || 'Student'
+  })()
+
+  useEffect(() => {
+    let isMounted = true
+
+    const loadSummary = async () => {
+      setIsLoadingSummary(true)
+      try {
+        const [coursesCount, staffCount] = await Promise.all([
+          supabase.from('subjects').select('id', { count: 'exact', head: true }),
+          supabase.from('staff').select('id', { count: 'exact', head: true }),
+        ])
+
+        if (coursesCount.error) throw coursesCount.error
+        if (staffCount.error) throw staffCount.error
+
+        if (!isMounted) return
+        setSummary({
+          courses: coursesCount.count ?? 0,
+          staff: staffCount.count ?? 0,
+        })
+      } catch (e) {
+        console.error('Failed to load student dashboard summary', e)
+      } finally {
+        if (isMounted) {
+          setIsLoadingSummary(false)
+        }
+      }
+    }
+
+    void loadSummary()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
   return (
     <section className="page-card">
       <p className="eyebrow">University Management System</p>
-      <h1>Student Dashboard</h1>
-      <p>Submit applications and browse available subjects from your portal.</p>
+      <h1>Welcome back, {studentName} 👋</h1>
+      <p>Here&apos;s what&apos;s available for you today.</p>
+
+      <div className="dashboard-summary-grid dashboard-summary-grid-student" aria-label="Student dashboard summary">
+        <article className="dashboard-summary-card">
+          <p className="dashboard-summary-value">{isLoadingSummary ? '...' : summary.courses}</p>
+          <p className="dashboard-summary-label">Total Available Courses</p>
+        </article>
+        <article className="dashboard-summary-card">
+          <p className="dashboard-summary-value">{isLoadingSummary ? '...' : summary.staff}</p>
+          <p className="dashboard-summary-label">Total Available Staff</p>
+        </article>
+      </div>
     </section>
   )
 }
