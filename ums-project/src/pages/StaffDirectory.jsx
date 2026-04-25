@@ -153,6 +153,19 @@ export default function StaffDirectory() {
                     <span className="supervisor-role">({staff.supervisor.role})</span>
                   </p>
                 ) : null}
+
+                {Array.isArray(staff.assignments) && staff.assignments.length > 0 ? (
+                  <p className="supervisor-info">
+                    <strong>Assigned subjects:</strong>{' '}
+                    {staff.assignments
+                      .slice(0, 3)
+                      .map((a) => `${a.code} (${a.role})`)
+                      .join(', ')}
+                    {staff.assignments.length > 3 ? ` +${staff.assignments.length - 3} more` : ''}
+                  </p>
+                ) : (
+                  <p className="field-hint">No subject assignments yet.</p>
+                )}
               </div>
             </div>
           ))}

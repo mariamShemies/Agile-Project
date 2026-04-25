@@ -244,8 +244,7 @@ export async function fetchPublicStaffDirectory() {
     throw error
   }
 
-  // Transform response to flatten supervisor and remove internal IDs
-  return (data ?? []).map((row) => ({
+  const base = (data ?? []).map((row) => ({
     id: row.id,
     full_name: row.full_name || '—',
     role: row.role || '—',
@@ -259,4 +258,48 @@ export async function fetchPublicStaffDirectory() {
           }
         : null,
   }))
+
+  // Attach subject assignments for "staff profile" visibility (best-effort)
+  try {
+    const staffIds = base.map((s) => s.id).filter(Boolean)
+    if (staffIds.length === 0) return base
+
+    const { data: aData, error: aErr } = await supabase
+      .from('subject_assignments')
+      .select(
+        `
+        staff_id,
+        role,
+        subject:subject_id(subject_code, subject_name)
+      `
+      )
+      .in('staff_id', staffIds)
+
+    if (aErr) return base
+
+    const map = new Map()
+    for (const a of aData ?? []) {
+      const sid = a?.staff_id
+      if (!sid) continue
+      const list = map.get(sid) ?? []
+      list.push(a)
+      map.set(sid, list)
+    }
+
+    return base.map((s) => {
+      const list = map.get(s.id) ?? []
+      const subjects = list
+        .map((a) => {
+          const subj = a?.subject
+          const code = subj?.subject_code ?? subj?.code
+          const name = subj?.subject_name ?? subj?.name
+          return { role: a?.role ?? '—', code: code ?? '—', name: name ?? '—' }
+        })
+        .filter(Boolean)
+      return { ...s, assignments: subjects }
+    })
+  } catch (e) {
+    console.error('fetchPublicStaffDirectory assignments', e)
+    return base
+  }
 }
