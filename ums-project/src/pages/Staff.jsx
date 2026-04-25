@@ -16,7 +16,7 @@ function displayId(row) {
 }
 
 /**
- * HR staff directory: add professor + list (Professors appear in the list after save).
+ * HR staff directory: add professor/TA + list.
  */
 export default function Staff() {
   const { role } = useAuth()
@@ -58,8 +58,8 @@ export default function Staff() {
       <p className="eyebrow">HR</p>
       <h2>Staff directory</h2>
       <p className="room-availability-intro">
-        Add <strong>professors</strong> to the university record. New entries use role <strong>Professor</strong> and
-        (optionally) an <strong>EMP-###</strong> employee ID. The table below refreshes when a row is created.
+        Add <strong>Professors</strong> and <strong>TAs</strong> to the university record. Each entry keeps its role
+        and appears in the directory below after save.
       </p>
 
       <AddProfessorPage onAdded={load} />
@@ -73,7 +73,7 @@ export default function Staff() {
       ) : null}
 
       {!loading && !loadError && rows.length === 0 ? (
-        <p className="status-message">No staff records found. Add a professor using the form above.</p>
+        <p className="status-message">No staff records found. Add a staff member using the form above.</p>
       ) : null}
 
       {!loading && !loadError && rows.length > 0 ? (

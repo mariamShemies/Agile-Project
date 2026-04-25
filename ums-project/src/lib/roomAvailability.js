@@ -1,5 +1,17 @@
 import { supabase } from './supabaseClient'
 
+export const RESERVATION_STATUS_CANCELLED = 'Cancelled'
+
+export function isActiveReservationRow(row) {
+  if (!row) return false
+  const s = String(row.status ?? '')
+    .trim()
+    .toLowerCase()
+  if (!s) return true
+  if (s === 'cancelled' || s === 'canceled') return false
+  return true
+}
+
 export function getLocalDateString(date = new Date()) {
   const y = date.getFullYear()
   const m = String(date.getMonth() + 1).padStart(2, '0')
@@ -44,6 +56,9 @@ export function getNowMinutes(date = new Date()) {
 }
 
 export function reservationCoversInstant(reservation, at = new Date()) {
+  if (!isActiveReservationRow(reservation)) {
+    return false
+  }
   const day = getLocalDateString(at)
   if (normalizeReservationDate(reservation.date) !== day) {
     return false
@@ -71,12 +86,12 @@ export async function fetchAllRooms() {
 export async function fetchReservationsForDate(dateString = getLocalDateString()) {
   const { data, error } = await supabase
     .from('reservations')
-    .select('id, room_id, date, start_time, end_time')
+    .select('id, room_id, date, start_time, end_time, status')
     .eq('date', dateString)
   if (error) {
     throw error
   }
-  return data ?? []
+  return (data ?? []).filter((r) => isActiveReservationRow(r))
 }
 
 export function normalizeTimeForDb(timeInput) {
@@ -127,6 +142,7 @@ export function reservationOverlapsExisting(roomId, date, startTime, endTime, ex
     return true
   }
   for (const r of existingRows) {
+    if (!isActiveReservationRow(r)) continue
     if (!roomIdsMatch(r.room_id, roomId)) continue
     if (normalizeReservationDate(r.date) !== day) continue
     const rs = timeToMinutes(r.start_time)
@@ -153,7 +169,13 @@ export async function createReservation({ roomId, date, startTime, endTime }) {
     start_time: dateAndTimeToLocalTimestamp(day, startTime),
     end_time: dateAndTimeToLocalTimestamp(day, endTime),
   }
-  const { error } = await supabase.from('reservations').insert([row])
+  const rowWithStatus = { ...row, status: 'Booked' }
+  let { error } = await supabase.from('reservations').insert([rowWithStatus])
+  if (error && (error.code === '42703' || /status/i.test(String(error.message || '')))) {
+    // Older DBs may not have `status` yet
+    const retry = await supabase.from('reservations').insert([row])
+    error = retry.error
+  }
   if (error) {
     const msg = error.message || String(error)
     // room_id in DB is often still bigint / numeric while rooms.id is uuid — type must match.
