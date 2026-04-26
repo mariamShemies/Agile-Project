@@ -84,6 +84,50 @@ export async function fetchReservations(dateString) {
   return data ?? []
 }
 
+/**
+ * Fetch reservations for a professor's subject assignments.
+ * @param {Array<string|number>} subjectIds
+ */
+export async function fetchReservationsForSubjectIds(subjectIds) {
+  const ids = [...new Set((subjectIds ?? []).map((id) => String(id).trim()).filter(Boolean))]
+  if (ids.length === 0) {
+    return []
+  }
+
+  const { data, error } = await supabase
+    .from('reservations')
+    .select(
+      `
+      id,
+      room_id,
+      subject_id,
+      date,
+      start_time,
+      end_time,
+      purpose,
+      status,
+      room:room_id(id, room_number, type, capacity),
+      subject:subject_id(id, subject_code, subject_name, status)
+    `
+    )
+    .in('subject_id', ids)
+    .order('date', { ascending: true })
+    .order('start_time', { ascending: true })
+
+  if (error) {
+    const fallback = await supabase
+      .from('reservations')
+      .select('id, room_id, subject_id, date, start_time, end_time, purpose, status')
+      .in('subject_id', ids)
+      .order('date', { ascending: true })
+      .order('start_time', { ascending: true })
+    if (fallback.error) throw fallback.error
+    return await hydrateReservationRows(fallback.data ?? [])
+  }
+
+  return data ?? []
+}
+
 async function hydrateReservationRows(rows) {
   const roomIds = [...new Set((rows ?? []).map((r) => r.room_id).filter(Boolean))]
   const subjectIds = [...new Set((rows ?? []).map((r) => r.subject_id).filter(Boolean))]
@@ -185,6 +229,86 @@ export async function createReservation({ roomId, subjectId, date, startTime, en
   }
 
   return data
+}
+
+/**
+ * Update an existing reservation without changing the reservation flow.
+ * @param {string|number} reservationId
+ * @param {object} input
+ */
+export async function updateReservation(reservationId, { roomId, subjectId, date, startTime, endTime, purpose }) {
+  const day = normalizeReservationDate(date)
+  const sMin = timeToMinutes(normalizeTimeForDb(startTime))
+  const eMin = timeToMinutes(normalizeTimeForDb(endTime))
+  if (eMin <= sMin) {
+    throw new Error('End time must be after start time.')
+  }
+
+  const subj = await supabase.from('subjects').select('id, status').eq('id', subjectId).maybeSingle()
+  if (subj.error) throw subj.error
+  if (!subj.data) {
+    throw new Error('Selected subject was not found.')
+  }
+  if (subj.data.status && subj.data.status !== SUBJECT_STATUS_ACTIVE) {
+    throw new Error('Subject must be Active to reserve a room for it.')
+  }
+
+  const { data: dayRows, error: dayErr } = await supabase
+    .from('reservations')
+    .select('id, room_id, date, start_time, end_time, status')
+    .eq('date', day)
+  if (dayErr) throw dayErr
+
+  const activeRows = (dayRows ?? []).filter((r) => isBookingStatusActive(r?.status) && String(r?.id) !== String(reservationId))
+  if (reservationOverlapsExisting(roomId, day, startTime, endTime, activeRows)) {
+    const err = new Error('Room already booked')
+    err.code = 'conflict'
+    throw err
+  }
+
+  const row = {
+    room_id: normalizeRoomIdForInsert(roomId),
+    subject_id: subjectId,
+    date: day,
+    start_time: dateAndTimeToLocalTimestamp(day, startTime),
+    end_time: dateAndTimeToLocalTimestamp(day, endTime),
+    purpose: String(purpose ?? '').trim(),
+    status: RESERVATION_STATUS_BOOKED,
+  }
+
+  const { data, error } = await supabase
+    .from('reservations')
+    .update(row)
+    .eq('id', reservationId)
+    .select('id, room_id, subject_id, date, start_time, end_time, purpose, status')
+    .maybeSingle()
+
+  if (error) {
+    const code = String(error?.code || '')
+    const msg = String(error?.message || '')
+
+    if (code === '23505' || /duplicate|unique/i.test(msg)) {
+      const e = new Error('Room already booked (database constraint). If you believe this is wrong, check for a unique index on reservations or cancelled rows still blocking re-booking.')
+      e.code = 'conflict'
+      e.cause = error
+      e.details = { supabaseCode: code, supabaseMessage: msg }
+      throw e
+    }
+
+    const wrapped = new Error(
+      `Could not update reservation: ${msg || 'Unknown error'}. If you are using Row Level Security, ensure UPDATE is allowed for authenticated users on public.reservations.`
+    )
+    wrapped.code = 'supabase'
+    wrapped.cause = error
+    throw wrapped
+  }
+
+  if (!data) {
+    return data
+  }
+
+  const hydrated = await hydrateReservationRows([data])
+  return hydrated[0] ?? data
 }
 
 export async function cancelReservation(reservationId) {
