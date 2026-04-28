@@ -1,95 +1,79 @@
-# Agile-Project
-# 📅 Classroom Reservation System
+# University Management System
 
-A web-based application that allows scheduling coordinators to reserve classrooms efficiently, avoid conflicts, and manage bookings in real time.
+This project is a role-based university management system built with React, Vite, and Supabase. It supports both staff and student workflows, with protected routes, dashboard summaries, and data-driven pages for managing applications, subjects, staff, students, reservations, and elective registration.
 
-## 🚀 Features
+## What it does
 
-- 📌 Create classroom reservations
-- ⏰ Select date, start time, and end time
-- 🏫 Assign reservations to specific rooms
-- ⚠️ Prevent double bookings (conflict handling)
-- 🔄 Real-time database integration using Supabase
-- 💻 Built with modern frontend tools (React + Vite)
+- Staff can review applications, assign instructors, manage subjects, view student profiles, reserve rooms, and check professor schedules.
+- Students can view their dashboard and register for electives.
+- Authentication and route protection are handled through Supabase and the app's protected routing layer.
+- Dashboard cards pull live counts from Supabase so the UI reflects current system data.
 
----
+## Tech Stack
 
-## 🛠️ Tech Stack
+- React 19
+- Vite
+- React Router
+- Supabase Auth and Postgres
+- Lucide React icons
 
-- **Frontend:** React (Vite)
-- **Backend / Database:** Supabase (PostgreSQL)
-- **Version Control:** Git & GitHub
+## Main Screens
 
----
+- Login
+- Staff dashboard
+- Student dashboard
+- Applications and application review
+- Student profiles
+- Assign instructors
+- Subject management and subject catalog
+- Room reservation and room availability
+- Professor schedule
+- Staff directory and staff management
+- Elective registration
 
-## 📂 Project Structure
+## Project Structure
 
-Agile-Project/
-│── src/
-│   ├── components/
-│   ├── pages/
-│   ├── supabaseClient.js
-│   └── App.jsx
-│── public/
-│── package.json
-│── vite.config.js
+- `src/App.jsx` contains the app shell, navigation, and route definitions.
+- `src/context/AuthContext.jsx` manages authentication state and role-based access.
+- `src/pages/` contains the individual feature pages.
+- `src/lib/` contains Supabase data helpers and domain logic.
+- `src/components/ProtectedRoute.jsx` guards authenticated routes.
+- `supabase/` contains SQL setup scripts for the database schema and policies.
 
----
+## Setup
 
-## 🗄️ Database Schema (Supabase)
+1. Install dependencies:
 
-
----
-
-## ⚙️ Getting Started
-
-### 1️⃣ Clone the Repository
-
-git clone https://github.com/mariamShemies/Agile-Project.git
-cd Agile-Project
-
----
-
-### 2️⃣ Install Dependencies
-
+```bash
 npm install
+```
 
----
+2. Create a `.env` file in `ums-project/` and add your Supabase credentials:
 
-### 3️⃣ Setup Environment Variables
-
-Create a `.env` file in the root folder and add:
-
+```bash
 VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
+3. Start the development server:
 
-
-VITE_SUPABASE_ANON_KEY=your_anon_key
-
----
-
-### 4️⃣ Run the Development Server
-
+```bash
 npm run dev
+```
 
----
+4. Open the local app in your browser at the Vite URL shown in the terminal.
 
-### 5️⃣ Open in Browser
+## Available Scripts
 
-http://localhost:5173
+- `npm run dev` starts the local development server.
+- `npm run build` creates a production build.
+- `npm run lint` runs ESLint.
+- `npm run preview` previews the production build locally.
 
----
+## Supabase Notes
 
-## ⚠️ Important Notes
+The app expects Supabase tables and policies for core data such as staff, students, subjects, applications, rooms, reservations, and elective registrations. The SQL files in `supabase/` are the place to start when setting up the backend schema.
 
-- Ensure your Supabase table is created before running the app.
-- You may need to enable Row Level Security (RLS) and add policies if required.
-- Time conflict validation should be handled in frontend/backend logic.
+## License
 
----
-
-
-
-## 📄 License
-
-This project is for educational purposes.
+This project is for educational use.
