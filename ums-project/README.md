@@ -37,15 +37,6 @@ Agile-Project/
 
 ## 🗄️ Database Schema (Supabase)
 
-### Reservations Table
-
-create table public.reservations (
-  id uuid not null primary key,
-  date date,
-  start_time timestamp default now(),
-  end_time timestamp,
-  room_id uuid
-);
 
 ---
 
@@ -69,6 +60,9 @@ npm install
 Create a `.env` file in the root folder and add:
 
 VITE_SUPABASE_URL=your_supabase_url
+
+
+
 VITE_SUPABASE_ANON_KEY=your_anon_key
 
 ---
