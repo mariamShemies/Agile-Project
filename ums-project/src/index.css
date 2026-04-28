@@ -5,6 +5,9 @@
   --card-border: #e2e8f0;
   --text-primary: #0f172a;
   --text-secondary: #64748b;
+  --surface-1: rgba(255, 255, 255, 0.86);
+  --surface-2: rgba(255, 255, 255, 0.93);
+  --surface-border: rgba(148, 163, 184, 0.22);
   --primary-500: #3b82f6;
   --primary-600: #2563eb;
   --primary-700: #1d4ed8;
@@ -41,6 +44,7 @@ body {
   color: var(--text-primary);
 }
 
+
 button,
 input,
 select {
@@ -49,6 +53,15 @@ select {
 
 button {
   cursor: pointer;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+    transition: none !important;
+    animation: none !important;
+  }
 }
 
 #root {
@@ -80,8 +93,8 @@ button {
   align-items: center;
   justify-content: space-between;
   position: relative;
-  background: rgba(255, 255, 255, 0.86);
-  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: var(--surface-1);
+  border: 1px solid var(--surface-border);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-tight);
   backdrop-filter: blur(12px);
@@ -185,8 +198,8 @@ button {
   gap: 10px;
   padding: 8px 12px;
   border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--surface-border);
+  background: color-mix(in srgb, var(--surface-1), transparent 20%);
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
   min-width: 0;
 }
@@ -244,8 +257,8 @@ button {
   overflow: auto;
   padding: 14px;
   border-radius: var(--radius-xl);
-  background: rgba(255, 255, 255, 0.93);
-  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: var(--surface-2);
+  border: 1px solid color-mix(in srgb, var(--surface-border), transparent 18%);
   box-shadow: var(--shadow-soft);
   backdrop-filter: blur(8px);
 }
@@ -465,6 +478,14 @@ button {
   box-shadow: var(--shadow-hover);
 }
 
+.page-card > *:first-child {
+  margin-top: 0;
+}
+
+.page-card > * + * {
+  margin-top: 10px;
+}
+
 .eyebrow {
   margin: 0 0 8px;
   font-size: 0.78rem;
@@ -489,6 +510,29 @@ button {
   color: var(--text-secondary);
   font-size: 1rem;
   line-height: 1.6;
+}
+
+.page-card h3 {
+  margin: 0 0 8px;
+  font-size: 1.12rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+/* Polished status messaging */
+.status-message {
+  margin-top: 12px;
+  border-radius: var(--radius-lg);
+  border: 1px solid color-mix(in srgb, var(--card-border), transparent 15%);
+  background: color-mix(in srgb, var(--card-bg), transparent 6%);
+  padding: 12px 14px;
+  font-weight: 650;
+}
+
+.status-message.error-message {
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.08);
 }
 
 .dashboard-summary-grid {
@@ -535,11 +579,12 @@ button {
 .page-card input {
   width: 100%;
   max-width: 420px;
-  border: 1px solid #d6dfec;
-  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--card-border), rgba(148, 163, 184, 0.28) 30%);
+  border-radius: var(--radius-md);
   padding: 10px 13px;
   margin: 10px 0;
-  background: #fff;
+  background: color-mix(in srgb, var(--card-bg), transparent 2%);
+  color: var(--text-primary);
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
@@ -549,8 +594,8 @@ button {
 .manage-subjects-search:focus,
 .reject-panel textarea:focus {
   outline: none;
-  border-color: #9bb9f4;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.14);
+  border-color: color-mix(in srgb, var(--primary-500), var(--card-border) 40%);
+  box-shadow: var(--ring);
 }
 
 .application-form {
@@ -1396,6 +1441,56 @@ button {
   margin-top: 24px;
 }
 
+/* Skeleton loading utilities */
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-grid {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.skeleton-card {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--card-border);
+  background: color-mix(in srgb, var(--card-bg), transparent 2%);
+  padding: 16px;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+}
+
+.skeleton-line {
+  height: 12px;
+  border-radius: 999px;
+  margin-top: 10px;
+  background: linear-gradient(
+    90deg,
+    rgba(148, 163, 184, 0.18) 0%,
+    rgba(148, 163, 184, 0.32) 20%,
+    rgba(148, 163, 184, 0.18) 40%,
+    rgba(148, 163, 184, 0.18) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.2s ease-in-out infinite;
+}
+
+.skeleton-line-title {
+  height: 16px;
+  margin-top: 0;
+  width: 64%;
+}
+
+.skeleton-line-short {
+  width: 52%;
+}
+
 .directory-card {
   border: 1px solid var(--card-border);
   border-radius: 18px;
@@ -1837,6 +1932,15 @@ button {
 .secondary-button:hover {
   background: #eef4ff;
   border-color: #cbd5e1;
+}
+
+.primary-button:focus-visible,
+.secondary-button:focus-visible,
+.logout-button:focus-visible,
+.danger-button:focus-visible,
+.sidebar-logout:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
 }
 
 .subjects-grid {

@@ -108,7 +108,16 @@ export default function StaffDirectory() {
       </form>
 
       {loading ? (
-        <p className="status-message">Loading staff directory…</p>
+        <div className="skeleton-grid" aria-label="Loading staff directory">
+          {Array.from({ length: 6 }).map((_, idx) => (
+            <div key={idx} className="skeleton-card">
+              <div className="skeleton-line skeleton-line-title" />
+              <div className="skeleton-line" />
+              <div className="skeleton-line" />
+              <div className="skeleton-line skeleton-line-short" />
+            </div>
+          ))}
+        </div>
       ) : null}
 
       {error ? (
