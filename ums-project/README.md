@@ -1,73 +1,75 @@
-# React + TypeScript + Vite
+📅 Classroom Reservation System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A web-based application that allows scheduling coordinators to reserve classrooms efficiently, avoid conflicts, and manage bookings in real time.
 
-Currently, two official plugins are available:
+🚀 Features
+📌 Create classroom reservations
+⏰ Select date, start time, and end time
+🏫 Assign reservations to specific rooms
+⚠️ Prevent double bookings (conflict handling)
+🔄 Real-time database integration using Supabase
+💻 Built with modern frontend tools (React + Vite)
+🛠️ Tech Stack
+Frontend: React (Vite)
+Backend / Database: Supabase (PostgreSQL)
+Version Control: Git & GitHub
+📂 Project Structure
+Agile-Project/
+│── src/
+│   ├── components/
+│   ├── pages/
+│   ├── supabaseClient.js
+│   └── App.jsx
+│── public/
+│── package.json
+│── vite.config.js
+🗄️ Database Schema (Supabase)
+Reservations Table
+create table public.reservations (
+  id uuid not null primary key,
+  date date,
+  start_time timestamp default now(),
+  end_time timestamp,
+  room_id uuid
+);
+⚙️ Getting Started
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Follow these steps to run the project locally:
 
-## React Compiler
+1️⃣ Clone the Repository
+git clone https://github.com/mariamShemies/Agile-Project.git
+cd Agile-Project
+2️⃣ Install Dependencies
+npm install
+3️⃣ Setup Environment Variables
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Create a .env file in the root folder and add:
 
-## Expanding the ESLint configuration
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_anon_key
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+You can find these in your Supabase Project Settings.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+4️⃣ Run the Development Server
+npm run dev
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+If you get an error like:
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Missing script: "dev"
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Make sure your package.json includes:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+"scripts": {
+  "dev": "vite",
+  "build": "vite build",
+  "preview": "vite preview"
+}
+5️⃣ Open in Browser
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Go to:
+
+http://localhost:5173
+⚠️ Important Notes
+Ensure your Supabase table is created before running the app.
+You may need to enable Row Level Security (RLS) and add policies if required.
+Time conflict validation should be handled in frontend/backend logic.
