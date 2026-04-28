@@ -71,6 +71,64 @@ export async function fetchAssignments(subjectIds) {
   return data ?? []
 }
 
+/**
+ * Load subjects taught by a professor (Instructor assignments only).
+ * @param {string} staffId
+ * @returns {Promise<Array<{ id: string, subject_code?: string, subject_name?: string, department?: string, status?: string }>>}
+ */
+export async function fetchInstructorSubjectsForStaff(staffId) {
+  const normalizedStaffId = String(staffId ?? '').trim()
+  if (!normalizedStaffId) {
+    return []
+  }
+
+  const { data, error } = await supabase
+    .from('subject_assignments')
+    .select(
+      `
+      subject_id,
+      subject:subject_id(id, subject_code, subject_name, department, status)
+    `
+    )
+    .eq('staff_id', normalizedStaffId)
+    .eq('role', ASSIGNMENT_ROLE_INSTRUCTOR)
+    .order('assigned_at', { ascending: true })
+
+  if (error) {
+    const fallback = await supabase
+      .from('subject_assignments')
+      .select('subject_id')
+      .eq('staff_id', normalizedStaffId)
+      .eq('role', ASSIGNMENT_ROLE_INSTRUCTOR)
+    if (fallback.error) {
+      throw fallback.error
+    }
+
+    return (fallback.data ?? [])
+      .map((row) => ({ id: row?.subject_id }))
+      .filter((row) => row.id)
+  }
+
+  const subjectsById = new Map()
+  for (const row of data ?? []) {
+    const subject = row?.subject
+    const subjectId = subject?.id ?? row?.subject_id
+    if (!subjectId || subjectsById.has(String(subjectId))) {
+      continue
+    }
+
+    subjectsById.set(String(subjectId), {
+      id: String(subjectId),
+      subject_code: subject?.subject_code ?? '—',
+      subject_name: subject?.subject_name ?? '—',
+      department: subject?.department ?? '—',
+      status: subject?.status ?? null,
+    })
+  }
+
+  return [...subjectsById.values()]
+}
+
 export async function assignInstructor({ subjectId, staffId, role }) {
   const normalizedRole = role === ASSIGNMENT_ROLE_TA ? ASSIGNMENT_ROLE_TA : ASSIGNMENT_ROLE_INSTRUCTOR
 

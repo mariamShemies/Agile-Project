@@ -4,12 +4,14 @@ import Applications from './pages/Applications.jsx'
 import ApplicationsReview from './pages/ApplicationsReview.jsx'
 import Login from './pages/Login.jsx'
 import RoomReservationPage from './pages/RoomReservationPage.jsx'
+import ProfessorSchedulePage from './pages/ProfessorSchedulePage.jsx'
 import Staff from './pages/Staff.jsx'
 import StaffDirectory from './pages/StaffDirectory.jsx'
 import ManageSubjectsPage from './pages/ManageSubjectsPage.jsx'
 import Subjects from './pages/Subjects.jsx'
 import StudentProfilePage from './pages/StudentProfilePage.jsx'
 import AssignInstructorPage from './pages/AssignInstructorPage.jsx'
+import ElectiveRegistrationPage from './pages/ElectiveRegistrationPage.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import { useAuth } from './context/AuthContext.jsx'
 import { getLocalDateString, mergeRoomsWithAvailability } from './lib/roomAvailability'
@@ -221,6 +223,7 @@ function AppLayout() {
           { to: '/applications', label: 'Applications' },
           { to: '/applications-review', label: 'Application Reviews' },
           { to: '/rooms', label: 'Room reservations' },
+          { to: '/professor-schedule', label: 'Professor schedule' },
           { to: '/staff', label: 'Add New Staff' },
           { to: '/directory', label: 'Staff Directory' },
           { to: '/subjects', label: 'Course Catalog' },
@@ -230,6 +233,7 @@ function AppLayout() {
           { to: '/student-dashboard', label: 'Dashboard' },
           { to: '/directory', label: 'Staff Directory' },
           { to: '/subjects', label: 'Course Catalog' },
+          { to: '/elective-registration', label: 'Elective Registration' },
         ]
 
   const navLinkClass = ({ isActive }) =>
@@ -262,6 +266,7 @@ function AppLayout() {
           <Route path="/directory" element={<StaffDirectory />} />
           <Route path="/staff-dashboard" element={<StaffDashboard />} />
           <Route path="/student-dashboard" element={<StudentDashboard />} />
+          {role === 'student' ? <Route path="/elective-registration" element={<ElectiveRegistrationPage />} /> : null}
           {role === 'staff' ? <Route path="/students" element={<StudentProfilePage />} /> : null}
           {role === 'staff' ? <Route path="/assign-instructors" element={<AssignInstructorPage />} /> : null}
           {role === 'staff' ? <Route path="/applications" element={<Applications />} /> : null}
@@ -269,6 +274,7 @@ function AppLayout() {
           <Route path="/subjects" element={<Subjects />} />
           {role === 'staff' ? <Route path="/subjects-manage" element={<ManageSubjectsPage />} /> : null}
           {role === 'staff' ? <Route path="/rooms" element={<RoomReservationPage />} /> : null}
+          {role === 'staff' ? <Route path="/professor-schedule" element={<ProfessorSchedulePage />} /> : null}
           {role === 'staff' ? <Route path="/staff" element={<Staff />} /> : null}
           <Route
             path="*"
