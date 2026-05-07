@@ -1,5 +1,20 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { BrowserRouter, NavLink, Navigate, Route, Routes } from 'react-router-dom'
+import {
+  BookOpen,
+  Building2,
+  CalendarDays,
+  ClipboardCheck,
+  ClipboardList,
+  ContactRound,
+  DoorOpen,
+  GraduationCap,
+  LayoutDashboard,
+  Menu,
+  Settings,
+  UserPlus,
+  Users,
+} from 'lucide-react'
 import Applications from './pages/Applications.jsx'
 import ApplicationsReview from './pages/ApplicationsReview.jsx'
 import Login from './pages/Login.jsx'
@@ -16,6 +31,21 @@ import ProtectedRoute from './components/ProtectedRoute.jsx'
 import { useAuth } from './context/AuthContext.jsx'
 import { getLocalDateString, mergeRoomsWithAvailability } from './lib/roomAvailability'
 import { supabase } from './lib/supabaseClient'
+
+const iconsByKey = {
+  dashboard: LayoutDashboard,
+  students: Users,
+  assign: ClipboardList,
+  applications: ClipboardList,
+  reviews: ClipboardCheck,
+  rooms: Building2,
+  schedule: CalendarDays,
+  staff: UserPlus,
+  directory: ContactRound,
+  catalog: BookOpen,
+  manage: Settings,
+  electives: BookOpen,
+}
 
 function StaffDashboard() {
   const { user } = useAuth()
@@ -212,56 +242,173 @@ function StudentDashboard() {
 }
 
 function AppLayout() {
-  const { role, logout } = useAuth()
+  const { role, logout, user } = useAuth()
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
-  const navItems =
-    role === 'staff'
-      ? [
-          { to: '/staff-dashboard', label: 'Dashboard' },
-          { to: '/students', label: 'Students' },
-          { to: '/assign-instructors', label: 'Assign Instructors' },
-          { to: '/applications', label: 'Applications' },
-          { to: '/applications-review', label: 'Application Reviews' },
-          { to: '/rooms', label: 'Room reservations' },
-          { to: '/professor-schedule', label: 'Professor schedule' },
-          { to: '/staff', label: 'Add New Staff' },
-          { to: '/directory', label: 'Staff Directory' },
-          { to: '/subjects', label: 'Course Catalog' },
-          { to: '/subjects-manage', label: 'Manage Courses' },
-        ]
-      : [
-          { to: '/student-dashboard', label: 'Dashboard' },
-          { to: '/directory', label: 'Staff Directory' },
-          { to: '/subjects', label: 'Course Catalog' },
-          { to: '/elective-registration', label: 'Elective Registration' },
-        ]
+  const navSections = useMemo(() => {
+    if (role === 'staff') {
+      return [
+        {
+          title: 'Overview',
+          items: [{ to: '/staff-dashboard', label: 'Dashboard', icon: 'dashboard' }],
+        },
+        {
+          title: 'Students',
+          items: [
+            { to: '/students', label: 'Students', icon: 'students' },
+            { to: '/assign-instructors', label: 'Assign Instructors', icon: 'assign' },
+          ],
+        },
+        {
+          title: 'Admissions',
+          items: [
+            { to: '/applications', label: 'Applications', icon: 'applications' },
+            { to: '/applications-review', label: 'Application Reviews', icon: 'reviews' },
+          ],
+        },
+        {
+          title: 'Academics',
+          items: [
+            { to: '/professor-schedule', label: 'Professor schedule', icon: 'schedule' },
+            { to: '/subjects', label: 'Course Catalog', icon: 'catalog' },
+            { to: '/subjects-manage', label: 'Manage Courses', icon: 'manage' },
+          ],
+        },
+        {
+          title: 'Operations',
+          items: [{ to: '/rooms', label: 'Room reservations', icon: 'rooms' }],
+        },
+        {
+          title: 'Staff',
+          items: [
+            { to: '/directory', label: 'Staff Directory', icon: 'directory' },
+            { to: '/staff', label: 'Add New Staff', icon: 'staff' },
+          ],
+        },
+      ]
+    }
 
-  const navLinkClass = ({ isActive }) =>
-    `nav-link${isActive ? ' nav-link-active' : ''}`
+    return [
+      {
+        title: 'Overview',
+        items: [{ to: '/student-dashboard', label: 'Dashboard', icon: 'dashboard' }],
+      },
+      {
+        title: 'Explore',
+        items: [
+          { to: '/subjects', label: 'Course Catalog', icon: 'catalog' },
+          { to: '/directory', label: 'Staff Directory', icon: 'directory' },
+        ],
+      },
+      {
+        title: 'Registration',
+        items: [{ to: '/elective-registration', label: 'Elective Registration', icon: 'electives' }],
+      },
+    ]
+  }, [role])
+
+  const navLinkClass = ({ isActive }) => `sidebar-link${isActive ? ' sidebar-link-active' : ''}`
+
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setIsSidebarOpen(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
+
+  useEffect(() => {
+    setIsSidebarOpen(false)
+  }, [role])
+
+  const sidebarTitle = useMemo(() => (role === 'staff' ? 'Admin' : 'Student'), [role])
+  const userLabel = useMemo(() => {
+    const email = String(user?.email ?? '').trim()
+    return email || (role === 'staff' ? 'Admin' : 'Student')
+  }, [role, user?.email])
 
   return (
-    <div className="app-shell">
-      <header className="topbar">
-        <div>
-          <p className="brand-kicker">UMS</p>
-          <h2 className="brand-title">University Management System</h2>
+    <div className="app-shell app-shell-sidebar">
+      <header className="topbar topbar-sidebar">
+        <div className="topbar-brand">
+          <div className="brand-mark" aria-hidden="true">
+            <GraduationCap size={18} />
+          </div>
+          <div className="brand-copy">
+            <p className="brand-kicker">UMS</p>
+            <h2 className="brand-title">University Management System</h2>
+          </div>
         </div>
 
-        <div className="nav-actions">
-          <nav className="nav-bar" aria-label="Primary navigation">
-            {navItems.map((item) => (
-              <NavLink key={item.to} to={item.to} end={item.to.includes('dashboard')} className={navLinkClass}>
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
-          <button className="logout-button" type="button" onClick={logout}>
-            Log out
+        <div className="topbar-actions">
+          <button
+            className="sidebar-toggle"
+            type="button"
+            aria-label="Toggle navigation"
+            aria-expanded={isSidebarOpen}
+            onClick={() => setIsSidebarOpen((v) => !v)}
+          >
+            <Menu size={18} aria-hidden="true" />
+            <span>Menu</span>
           </button>
+          <div className="user-chip" aria-label="Current user">
+            <span className="user-chip-role">{sidebarTitle}</span>
+            <span className="user-chip-email">{userLabel}</span>
+          </div>
         </div>
       </header>
 
-      <main className="content-area">
+      {isSidebarOpen ? <div className="sidebar-backdrop" onClick={() => setIsSidebarOpen(false)} /> : null}
+
+      <aside className={`sidebar${isSidebarOpen ? ' sidebar-open' : ''}`} aria-label="Sidebar navigation">
+        <div className="sidebar-header">
+          <p className="sidebar-kicker">{sidebarTitle}</p>
+          <p className="sidebar-subtitle">Navigation</p>
+        </div>
+        <nav className="sidebar-nav" aria-label={`${sidebarTitle} sections`}>
+          {navSections.map((section) => (
+            <div key={section.title} className="sidebar-section">
+              <p className="sidebar-section-title">{section.title}</p>
+              <div className="sidebar-section-links">
+                {section.items.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.to.includes('dashboard')}
+                    className={navLinkClass}
+                    onClick={() => setIsSidebarOpen(false)}
+                  >
+                    <span className="sidebar-link-icon" aria-hidden="true">
+                      {(() => {
+                        const Icon = iconsByKey[item.icon]
+                        return Icon ? <Icon size={18} /> : null
+                      })()}
+                    </span>
+                    <span className="sidebar-link-label">{item.label}</span>
+                  </NavLink>
+                ))}
+              </div>
+            </div>
+          ))}
+        </nav>
+        <div className="sidebar-footer">
+          <button
+            className="sidebar-logout"
+            type="button"
+            onClick={() => {
+              setIsSidebarOpen(false)
+              logout()
+            }}
+          >
+            <span className="sidebar-link-icon" aria-hidden="true">
+              <DoorOpen size={18} />
+            </span>
+            <span className="sidebar-link-label">Log out</span>
+          </button>
+        </div>
+      </aside>
+
+      <main className="content-area content-area-sidebar">
         <Routes>
           <Route path="/directory" element={<StaffDirectory />} />
           <Route path="/staff-dashboard" element={<StaffDashboard />} />
